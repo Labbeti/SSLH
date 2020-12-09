@@ -1,0 +1,1 @@
+mv ~/logs/* ~/saved_logs/

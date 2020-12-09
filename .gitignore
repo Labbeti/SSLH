@@ -1,0 +1,27 @@
+# Folders
+.idea/
+.ipynb_checkpoints/
+.vs/
+.vscode/
+__pycache__/
+build/
+dataset/
+dist/
+old/
+results/
+tensorboard/
+
+# Folders mask
+*.egg-info/
+
+# Filetypes
+*.pyc
+*.err
+*.out
+*.torch
+*.ign
+
+# Specific files
+.tmp_sbatch.sh
+.sbatch_*.sh
+.sbatch.sh
