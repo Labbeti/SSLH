@@ -9,14 +9,15 @@ Holistic methods for Semi-Supervised Learning : MixMatch, ReMixMatch and FixMatc
 - This project has been made with Ubuntu 20.04 and Python 3.8.5.
 - This installation requires **Anaconda** to manage the Python environment. (version used: 4.8.5) 
 - This project has been made for running with GPU but not with CPU.
-- Make sure you have access to the repositories used to manage datasets : 
-  - For UrbanSound8k dataset : https://github.com/leocances/UrbanSound8K.git (created by Léo Cances)
-  - For AudioSet dataset : https://github.com/Labbeti/Torch-AudioSet.git
+- Make sure you have access to the following repositories : 
+  - For UrbanSound8k dataset : https://github.com/leocances/UrbanSound8K (created by Léo Cances)
+  - For AudioSet dataset : https://github.com/Labbeti/Torch-AudioSet
+  - For utility functions and classes : https://github.com/Labbeti/MLU
 
 #### Download & setup
 - Clone the repository :
 ```bash
-git clone https://github.com/Labbeti/SSL.git
+git clone https://github.com/Labbeti/SSL
 ```
 - Create a conda environment with the YAML file (passwords can be required during installation) :
 ```bash

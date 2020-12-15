@@ -1,5 +1,5 @@
 
-from sslh.utils.torch import CrossEntropyWithVectors, get_reduction_from_name
+from mlu.nn import CrossEntropyWithVectors, get_reduction_from_name
 
 from torch import Tensor
 from torch.nn import Module
@@ -19,12 +19,12 @@ class FixMatchLoss(Module):
 		self,
 		criterion_s: Callable = CrossEntropyWithVectors(reduction="none"),
 		criterion_u: Callable = CrossEntropyWithVectors(reduction="none"),
-		reduction: str = "batchmean",
+		reduction: str = "mean",
 	):
 		"""
 			:param criterion_s: The criterion used for labeled loss component.
 			:param criterion_u: The criterion used for unlabeled loss component. No reduction must be applied.
-			:param reduction: The main reduction to use. Can be 'none', 'mean', 'batchmean' or 'sum'.
+			:param reduction: The main reduction to use. Can be 'none', 'mean' or 'sum'.
 		"""
 		super().__init__()
 		self.criterion_s = criterion_s

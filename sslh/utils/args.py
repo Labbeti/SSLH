@@ -3,17 +3,9 @@ import os.path as osp
 import subprocess
 
 from argparse import ArgumentParser, Namespace
-from sslh.utils.types import str_to_bool, str_to_optional_str, str_to_optional_float, str_to_optional_int, float_in_range
-
-
-# Full train names constants
-class NAME:
-	FIXMATCH = "FixMatch"
-	MIXMATCH = "MixMatch"
-	REMIXMATCH = "ReMixMatch"
-	SUPERVISED_FULL = "Supervised_Full"
-	SUPERVISED_PART = "Supervised_Part"
-	SUPERVISED = "Supervised"
+from sslh.utils.types import (
+	str_to_bool, str_to_optional_str, str_to_optional_float, str_to_optional_int, float_in_range, str_to_optional_bool
+)
 
 
 def add_common_args(parser: ArgumentParser) -> ArgumentParser:
@@ -26,7 +18,7 @@ def add_common_args(parser: ArgumentParser) -> ArgumentParser:
 		choices=["CIFAR10", "UBS8K", "ESC10", "ESC50", "GSC", "GSC12", "AUDIOSET"],
 		help="Dataset name to use. (default: CIFAR10)")
 
-	group.add_argument("--dataset_path", "--dataset_root", type=str, default=osp.join("..", "dataset"),
+	group.add_argument("--dataset_path", "--dataset_root", type=str, default=osp.join("..", "datasets"),
 		help="Dataset root dir where the data is stored. (default: \"../dataset\")")
 
 	group.add_argument("--seed", type=int, default=1234,
@@ -46,8 +38,9 @@ def add_common_args(parser: ArgumentParser) -> ArgumentParser:
 
 	group.add_argument("--write_results", "--save_results", type=str_to_bool, default=True,
 		help="Write results in a tensorboard SummaryWriter. (default: True)")
+
 	group.add_argument("--args_filepaths", type=str, nargs="+", default=None,
-		help="List of filepaths to arguments file. Values in this JSON will overwrite other options in terminal."
+		help="List of filepaths to arguments file. Values in this JSON will overwrite other options in terminal. "
 			 "(default: None)")
 
 	group.add_argument("--model", type=str_to_optional_str, default=None,
@@ -69,6 +62,10 @@ def add_common_args(parser: ArgumentParser) -> ArgumentParser:
 	group.add_argument("--momentum", type=str_to_optional_float, default=None,
 		help="Momentum used in SGD optimizer. Use None for use the default momentum of the optimizer. (default: None)")
 
+	group.add_argument("--use_nesterov", "--nesterov", type=str_to_optional_bool, default=False,
+		help="Activate Nesterov momentum for SGD optimizer. Use None for use the default momentum of the optimizer. "
+			 "(default: False)")
+
 	group.add_argument("--scheduler", "--sched", type=str_to_optional_str, default=None,
 		choices=[
 			None,
@@ -79,10 +76,10 @@ def add_common_args(parser: ArgumentParser) -> ArgumentParser:
 		help="FixMatch scheduler used. Use \"None\" for not using any scheduler. (default: None)")
 
 	group.add_argument("--lr_decay_ratio", type=float, default=0.2,
-		help="Learning rate decay ratio used in StepLRScheduler. (default: 0.2)")
+		help="Learning rate decay ratio used in MultiStepLR scheduler. (default: 0.2)")
 
 	group.add_argument("--epoch_steps", type=int, nargs="+", default=[60, 120, 160],
-		help="Epochs where we decrease the learning rate. Used in StepLRScheduler. (default: [60, 120, 160])")
+		help="Epochs where we decrease the learning rate. Used in MultiStepLR scheduler. (default: [60, 120, 160])")
 
 	group.add_argument("--checkpoint_path", type=str, default=osp.join("..", "results", "models"),
 		help="Directory path where checkpoint models will be saved. (default: \"../results/models\")")
@@ -97,10 +94,6 @@ def add_common_args(parser: ArgumentParser) -> ArgumentParser:
 		help="Fold used for validation in UBS8K dataset. This parameter is unused if cross validation_old is True. "
 							 "(default: None)")
 
-	group.add_argument("--ra_magnitude", type=str_to_optional_int, default=None,
-		help="Magnitude used in RandAugment. Use \"None\" for generate a random magnitude each time the augmentation "
-			 "is called. (default: None)")
-
 	group.add_argument("--ra_nb_choices", type=int, default=1,
 		help="Nb augmentations composed for RandAugment. (default: 1)")
 
@@ -108,7 +101,7 @@ def add_common_args(parser: ArgumentParser) -> ArgumentParser:
 		help="Label smoothing value for supervised trainings. Use 0.0 for deactivate label smoothing. "
 			 "If value is 1.0, all labels will be a uniform distribution. (default: 0.0)")
 
-	group.add_argument("--batch_size_s", "--bsize_s", type=int, default=128,
+	group.add_argument("--batch_size_s", "--bsize_s", "--bsize", type=int, default=128,
 		help="Batch size used for supervised loader. (default: 128)")
 
 	group.add_argument("--nb_classes_self_supervised", type=int, default=4,

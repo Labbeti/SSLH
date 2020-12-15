@@ -1,8 +1,8 @@
 from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 
 from sslh.datasets.utils import get_classes_idx, shuffle_classes_idx, split_classes_idx
-from sslh.utils.zip_cycle import ZipCycle
-from sslh.datasets.wrappers.multiple_dataset import MultipleDataset
+from mlu.utils.zip_cycle import ZipCycle
+from mlu.datasets.wrappers import ZipDataset
 
 
 class DummyDataset(Dataset):
@@ -36,8 +36,8 @@ def test_1():
 def test_2():
 	ds1 = DummyDataset()
 	ds2 = DummyDataset(-1)
-	ds3 = MultipleDataset([ds1, ds1])
-	ds = MultipleDataset([ds3, ds2])
+	ds3 = ZipDataset([ds1, ds1])
+	ds = ZipDataset([ds3, ds2])
 
 	loader = DataLoader(ds, batch_size=4)
 	for items in loader:

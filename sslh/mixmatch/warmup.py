@@ -4,7 +4,7 @@ from typing import Optional
 
 class WarmUp:
 	"""
-		warmup class.
+		WarmUp class.
 
 		Linearly increase a value each time the method "step()" is called.
 		Access the current value with method "value()".

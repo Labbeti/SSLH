@@ -6,8 +6,8 @@ from sslh.mixmatch.trainer import MixMatchTrainer
 from sslh.remixmatch.average_pred import AveragePred
 from sslh.remixmatch.loss import ReMixMatchLoss
 from sslh.remixmatch.module_rot import ModuleRot
-from sslh.utils.display import ColumnDisplay
-from sslh.utils.display_abc import DisplayABC
+from mlu.utils.printers import ColumnPrinter
+from mlu.utils.printers import PrinterABC
 from sslh.utils.recorder.recorder_abc import RecorderABC
 from mixmatch.sharpen import sharpen
 from sslh.utils.torch import normalized
@@ -32,7 +32,7 @@ class ReMixMatchTrainer(MixMatchTrainer):
 			recorder: RecorderABC,
 			transform_self_supervised: Callable,
 			criterion: Callable = ReMixMatchLoss(),
-			display: DisplayABC = ColumnDisplay(),
+			display: PrinterABC = ColumnPrinter(),
 			device: torch.device = torch.device("cuda"),
 			temperature: float = 0.5,
 			alpha: float = 0.75,
@@ -98,15 +98,6 @@ class ReMixMatchTrainer(MixMatchTrainer):
 				metric.reset()
 
 		self.recorder.start_record(epoch)
-		keys = \
-			list(self.metrics_s_mix.keys()) + \
-			list(self.metrics_u_mix.keys()) + \
-			list(self.metrics_u1.keys()) + \
-			list(self.metrics_r.keys()) + \
-			["loss", "loss_s", "loss_u", "loss_u1", "loss_r"]
-		self.display.print_header("train", keys)
-
-		iter_loader = iter(self.loader)
 
 		for i, ((batch_s_augm_strong, labels_s), (batch_u_augm_weak, batch_u_augm_strong_multiple)) in enumerate(
 				iter_loader):

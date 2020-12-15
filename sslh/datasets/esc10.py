@@ -5,7 +5,7 @@ from sslh.datasets.dataset_sized import DatasetSized
 from sslh.datasets.detail.esc_ds import ESC10_NoSR_Cached
 from sslh.datasets.esc50 import ESC50Interface
 from sslh.datasets.module_call import ModuleCall
-from sslh.datasets.wrappers.onehot_dataset import OneHotDataset
+from mlu.datasets.wrappers import OneHotDataset
 
 from torch.nn import Module
 from typing import Callable, Optional, List

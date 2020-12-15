@@ -1,13 +1,14 @@
 import torch
 
+from mlu.nn import CrossEntropyWithVectors
+from mlu.utils.printers import ColumnPrinter, PrinterABC
+from mlu.utils.misc import get_lr
+
 from sslh.fixmatch.loss import FixMatchLoss
 from sslh.fixmatch.trainer import FixMatchTrainer
-from sslh.utils.display import ColumnDisplay
-from sslh.utils.display_abc import DisplayABC
 from sslh.utils.misc import interpolation
 from sslh.utils.other_metrics import Metrics
 from sslh.utils.recorder.recorder_abc import RecorderABC
-from sslh.utils.torch import get_lr, CrossEntropyWithVectors
 from sslh.utils.types import IterableSized
 
 from torch.distributions.categorical import Categorical
@@ -30,7 +31,7 @@ class FixMatchTrainerUniLoss(FixMatchTrainer):
 		start_probs: List[float],
 		target_probs: List[float],
 		criterion: Callable = FixMatchLoss(),
-		display: DisplayABC = ColumnDisplay(),
+		display: PrinterABC = ColumnPrinter(),
 		device: torch.device = torch.device("cuda"),
 		threshold: float = 0.5,
 		lambda_s: float = 1.0,
@@ -85,10 +86,6 @@ class FixMatchTrainerUniLoss(FixMatchTrainer):
 				metric.reset()
 
 		self.recorder.start_record(epoch)
-		keys = list(self.metrics_s.keys()) + list(self.metrics_u.keys()) + ["loss_s", "loss_u", "labels_used", "prob_s", "prob_u"]
-		self.display.print_header("train", keys)
-
-		iter_loader = iter(self.loader)
 
 		self.probs = torch.zeros(len(self.start_probs))
 		for i, target in enumerate(self.target_probs):
@@ -97,7 +94,7 @@ class FixMatchTrainerUniLoss(FixMatchTrainer):
 		self.recorder.add_point("train/prob_s", self.probs[0].item())
 		self.recorder.add_point("train/prob_u", self.probs[1].item())
 
-		for i, ((batch_s_augm_weak, labels_s), (batch_u_augm_weak, batch_u_augm_strong)) in enumerate(iter_loader):
+		for i, ((batch_s_augm_weak, labels_s), (batch_u_augm_weak, batch_u_augm_strong)) in enumerate(self.loader):
 			loss_chosen = self.choose_loss()
 
 			if loss_chosen == "s":

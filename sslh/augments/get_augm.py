@@ -2,11 +2,12 @@
 from argparse import Namespace
 from augmentation_utils.signal_augmentations import Occlusion, TimeStretch
 from augmentation_utils.spec_augmentations import HorizontalFlip, RandomTimeDropout, RandomFreqDropout, VerticalFlip
-from augmentation_utils.spec_augmentations import Noise as NoiseSpec
 
-from sslh.augments.signal_augments import ResizePadCut
-from sslh.augments.spec_augments import CutOutSpec
-from sslh.augments.utils import Identity
+from mlu.transforms import Identity
+from mlu.transforms.waveform import StretchPadCrop
+from mlu.transforms.spectrogram import CutOutSpec
+
+from sslh.augments.utils import NoiseSpec
 
 from typing import Callable, List, Optional
 
@@ -43,7 +44,7 @@ def get_augment_by_name(name: Optional[str], args: Optional[Namespace]) -> Calla
 			- TimeStretch :
 				args.ratio: float,
 				args.time_stretch_rate: Tuple[float, float]
-			- ResizePadCut :
+			- StretchPadCrop or ResizePadCut :
 				args.ratio: float,
 				args.resize_rate: Union[Tuple[float, float], float],
 				args.resize_align: str
@@ -52,7 +53,7 @@ def get_augment_by_name(name: Optional[str], args: Optional[Namespace]) -> Calla
 	ratio = args.ratio if args is not None else 1.0
 
 	if name in ["Identity".lower(), "None".lower()]:
-		return Identity(ratio)
+		return Identity()
 
 	elif name == "HorizontalFlip".lower():
 		return HorizontalFlip(ratio)
@@ -69,7 +70,7 @@ def get_augment_by_name(name: Optional[str], args: Optional[Namespace]) -> Calla
 		width_scale = args.cutout_width_scale if args is not None else (0.1, 0.5)
 		height_scale = args.cutout_height_scale if args is not None else (0.1, 0.5)
 		return CutOutSpec(
-			ratio, rect_width_scale_range=width_scale, rect_height_scale_range=height_scale
+			width_scale_range=width_scale, height_scale_range=height_scale, fill_value=-80.0, p=ratio
 		)
 	elif name == "RandomTimeDropout".lower():
 		random_time_dropout = args.random_time_dropout if args is not None else 0.01
@@ -91,11 +92,11 @@ def get_augment_by_name(name: Optional[str], args: Optional[Namespace]) -> Calla
 		return TimeStretch(
 			ratio, rate=rate
 		)
-	elif name == "ResizePadCut".lower():
+	elif name in ["StretchPadCrop".lower(), "ResizePadCut".lower()]:
 		rate = args.resize_rate if args is not None else (0.9, 1.1)
 		align = args.resize_align if args is not None else "left"
-		return ResizePadCut(
-			ratio, rate=rate, align=align
+		return StretchPadCrop(
+			rate=rate, align=align, p=ratio
 		)
 	else:
 		raise RuntimeError(f"Unknown augment \"{name}\".")

@@ -12,19 +12,20 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
+from mlu.datasets.wrappers import NoLabelDataset, ZipDataset
+from mlu.utils.misc import get_datetime, reset_seed
+from mlu.utils.zip_cycle import ZipCycle
+
 from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
-from sslh.datasets.wrappers.multiple_dataset import MultipleDataset
-from sslh.datasets.wrappers.no_label_dataset import NoLabelDataset
 from sslh.fixmatch.loss import FixMatchLoss
 from sslh.fixmatch.trainer import FixMatchTrainer
 from sslh.utils.args import post_process_args, check_args, add_common_args
 from sslh.utils.cross_validation import cross_validation
-from sslh.utils.misc import build_optimizer, build_scheduler, get_datetime, reset_seed, build_tensorboard_writer, build_checkpoint, get_prefix
+from sslh.utils.misc import build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix
 from sslh.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric, MaxMetric
 from sslh.utils.recorder.recorder import Recorder
 from sslh.utils.save import save_results
 from sslh.utils.types import str_to_optional_str
-from sslh.utils.zip_cycle import ZipCycle
 from sslh.validation.validater import Validater
 
 from time import time
@@ -77,7 +78,7 @@ def run_fixmatch(args: Namespace, start_date: str, fold_val: Optional[int], inte
 	dataset_val = interface.get_dataset_val(args, folds_val)
 	dataset_eval = interface.get_dataset_eval(args, None)
 
-	indexes_s, indexes_u = interface.get_indexes(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
+	indexes_s, indexes_u = interface.generate_indexes_for_split(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
 	dataset_train_s_augm_weak = Subset(dataset_train_augm_weak, indexes_s)
 	dataset_train_u_augm_weak = Subset(dataset_train_augm_weak, indexes_u)
 	dataset_train_u_augm_strong = Subset(dataset_train_augm_strong, indexes_u)
@@ -85,7 +86,7 @@ def run_fixmatch(args: Namespace, start_date: str, fold_val: Optional[int], inte
 	dataset_train_u_augm_weak = NoLabelDataset(dataset_train_u_augm_weak)
 	dataset_train_u_augm_strong = NoLabelDataset(dataset_train_u_augm_strong)
 
-	dataset_train_u_augm_weak_strong = MultipleDataset([dataset_train_u_augm_weak, dataset_train_u_augm_strong])
+	dataset_train_u_augm_weak_strong = ZipDataset([dataset_train_u_augm_weak, dataset_train_u_augm_strong])
 
 	loader_train_s_augm = DataLoader(
 		dataset=dataset_train_s_augm_weak, batch_size=args.batch_size_s, shuffle=True, num_workers=2, drop_last=True)

@@ -2,6 +2,9 @@ import torch
 
 from abc import ABC
 from argparse import Namespace
+
+from mlu.datasets.utils import generate_indexes
+
 from sslh.datasets.utils import get_classes_idx, shuffle_classes_idx, split_classes_idx
 from sslh.datasets.dataset_sized import DatasetSized
 from sslh.models.get_model import get_model
@@ -107,11 +110,8 @@ class DatasetInterface(ABC):
 		model = get_model(model_name, args, models_classes, device)
 		return model
 
-	def get_indexes(self, dataset: Dataset, ratios: List[float]) -> List[List[int]]:
-		cls_idx_all = get_classes_idx(dataset, self.get_nb_classes(), is_one_hot=True)
-		cls_idx_all = shuffle_classes_idx(cls_idx_all)
-		idx_split = split_classes_idx(cls_idx_all, ratios)
-		return idx_split
+	def generate_indexes_for_split(self, dataset: Dataset, ratios: List[float]) -> List[List[int]]:
+		return generate_indexes(dataset, self.get_nb_classes(), ratios, target_one_hot=True)
 
 	def get_dataset_train(self, args: Namespace, folds: Optional[List[int]] = None) -> DatasetSized:
 		transform_augm_none = self.get_transform_augm_none(args)

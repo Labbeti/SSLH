@@ -2,13 +2,13 @@ import os.path as osp
 
 from argparse import Namespace
 
+from mlu.datasets.wrappers import OneHotDataset
+from mlu.transforms import Identity
+
 from sslh.augments.get_pool import get_pool_audio_with_name
-from sslh.augments.spec_augments import IdentitySpec
 from sslh.datasets.abc import DatasetInterface
 from sslh.datasets.dataset_sized import DatasetSized
 from sslh.datasets.transform import get_transform_self_supervised_flips
-from sslh.datasets.wrappers.onehot_dataset import OneHotDataset
-from sslh.datasets.wrappers.to_tensor_dataset import ToTensorDataset
 from sslh.models.cnn03 import CNN03, CNN03Rot
 from sslh.models.ubs8k_baseline import UBS8KBaseline, UBS8KBaselineRot
 from sslh.models.wrn28_2 import WideResNet28Spec, WideResNet28RotSpec
@@ -38,7 +38,6 @@ class UBS8KInterface(DatasetInterface):
 
 		manager = self._load_manager(args.dataset_path)
 		dataset_train = UBS8KDataset(manager, folds=folds, augments=transform, cached=False, augment_choser=lambda x: x)
-		dataset_train = ToTensorDataset(dataset_train)
 		dataset_train = OneHotDataset(dataset_train, self.get_nb_classes(), args.label_smoothing_value)
 		return dataset_train
 
@@ -55,7 +54,6 @@ class UBS8KInterface(DatasetInterface):
 
 		manager = self._load_manager(args.dataset_path)
 		dataset_val = UBS8KDataset(manager, folds=folds, augments=transform, cached=True, augment_choser=lambda x: x)
-		dataset_val = ToTensorDataset(dataset_val)
 		dataset_val = OneHotDataset(dataset_val, self.get_nb_classes())
 		return dataset_val
 
@@ -75,7 +73,7 @@ class UBS8KInterface(DatasetInterface):
 		return RandomChoice(pool_strong)
 
 	def get_transform_val(self, args: Optional[Namespace]) -> Callable:
-		return IdentitySpec()
+		return Identity()
 
 	def get_dataset_name(self) -> str:
 		return "UBS8K"

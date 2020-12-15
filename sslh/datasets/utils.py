@@ -66,34 +66,6 @@ def split_classes_idx(classes_idx: List[List[int]], ratios: List[float]) -> List
 	return result
 
 
-def collapse_classes_idx(classes_idx: List[List[int]]) -> List[int]:
-	"""
-		Resize classes indexes in a single list of indexes.
-		:param classes_idx: A list of sublist of int. Every sublist "i" contains the indexes of elements in the classes "i".
-		:returns: A list of indexes.
-	"""
-	indexes = []
-	for idx in classes_idx:
-		indexes += idx
-	return indexes
-
-
-def get_reduced_dataset(dataset: Dataset, nb_classes: int, ratio: float) -> DatasetSized:
-	"""
-		Reduce dataset size by ratio but keep the same class distribution.
-		:param dataset: The original dataset.
-		:param nb_classes: The number of classes in the original dataset.
-		:param ratio: The ratio in [0, 1] used to reduce the dataset size.
-		:returns: The reduced dataset.
-	"""
-	assert 0.0 <= ratio <= 1.0
-	cls_idx_all = get_classes_idx(dataset, nb_classes)
-	cls_idx_all = shuffle_classes_idx(cls_idx_all)
-	cls_idx_all = reduce_classes_idx(cls_idx_all, ratio)
-	indexes = collapse_classes_idx(cls_idx_all)
-	return Subset(dataset, indexes)
-
-
 def split_dataset(
 	dataset: Dataset,
 	nb_classes: int,

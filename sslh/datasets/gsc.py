@@ -1,14 +1,16 @@
 
 from argparse import Namespace
 
+from mlu.nn import Squeeze
+
 from sslh.augments.get_pool import get_pool_audio_with_name, add_transform_to_spec_for_pool
-from sslh.augments.utils import Squeeze, PadUpTo
+from sslh.augments.utils import PadUpTo
 from sslh.datasets.module_call import ModuleCall
 from sslh.datasets.abc import DatasetInterface
 from sslh.datasets.dataset_sized import DatasetSized
 from sslh.datasets.detail.gsc_ds import SpeechCommands, target_mapper
 from sslh.datasets.transform import get_transform_self_supervised_flips
-from sslh.datasets.wrappers.onehot_dataset import OneHotDataset
+from mlu.datasets.wrappers import OneHotDataset
 from sslh.models.wrn28_2 import WideResNet28Spec, WideResNet28RotSpec
 
 from torch.nn import Sequential, Module

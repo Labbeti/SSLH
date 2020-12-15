@@ -14,6 +14,8 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
+from mlu.utils.misc import get_datetime, reset_seed
+
 from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
 from sslh.supervised.loss import MixUpLoss, MixUpLossSmooth
 from sslh.supervised.trainer import SupervisedTrainer
@@ -25,12 +27,12 @@ from sslh.supervised.trainer_mixup_mix_label_sharp import SupervisedTrainerMixUp
 from sslh.utils.args import post_process_args, check_args, add_common_args
 from sslh.utils.cross_validation import cross_validation
 from sslh.utils.misc import (
-	build_optimizer, build_scheduler, get_datetime, reset_seed, build_tensorboard_writer, build_checkpoint, get_prefix
+	build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix
 )
 from sslh.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric, MaxMetric
 from sslh.utils.recorder.recorder import Recorder
 from sslh.utils.save import save_results
-from sslh.utils.torch import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
+from mlu.nn import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
 from sslh.utils.types import str_to_optional_str, str_to_bool
 from sslh.validation.validater import Validater
 
@@ -110,7 +112,7 @@ def run_supervised_exp(
 	dataset_eval = interface.get_dataset_eval(args, None)
 
 	if args.supervised_ratio < 1.0:
-		indexes = interface.get_indexes(dataset_train, [args.supervised_ratio])[0]
+		indexes = interface.generate_indexes_for_split(dataset_train, [args.supervised_ratio])[0]
 		dataset_train = Subset(dataset_train, indexes)
 
 	loader_train = DataLoader(dataset_train, batch_size=args.batch_size_s, shuffle=True, num_workers=8, drop_last=True)

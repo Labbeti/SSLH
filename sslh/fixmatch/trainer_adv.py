@@ -4,13 +4,14 @@ import torch
 
 from advertorch.attacks import GradientSignAttack
 
+from mlu.nn import CrossEntropyWithVectors
+from mlu.utils.misc import get_lr
+from mlu.utils.printers import ColumnPrinter, PrinterABC
+
 from sslh.fixmatch.loss import FixMatchLoss
 from sslh.fixmatch.trainer import FixMatchTrainer
-from sslh.utils.display import ColumnDisplay
-from sslh.utils.display_abc import DisplayABC
 from sslh.utils.other_metrics import Metrics, CategoricalAccuracyOnehot
 from sslh.utils.recorder.recorder_abc import RecorderABC
-from sslh.utils.torch import get_lr, CrossEntropyWithVectors
 from sslh.utils.types import IterableSized
 
 from torch.nn import Module
@@ -29,7 +30,7 @@ class FixMatchTrainerAdv(FixMatchTrainer):
 		metrics_u: Dict[str, Metrics],
 		recorder: RecorderABC,
 		criterion: Callable = FixMatchLoss(),
-		display: DisplayABC = ColumnDisplay(),
+		display: PrinterABC = ColumnPrinter(),
 		device: torch.device = torch.device("cuda"),
 		threshold: float = 0.5,
 		lambda_s: float = 1.0,
@@ -67,12 +68,8 @@ class FixMatchTrainerAdv(FixMatchTrainer):
 				metric.reset()
 
 		self.recorder.start_record(epoch)
-		keys = list(self.metrics_s.keys()) + list(self.metrics_u.keys()) + ["loss", "loss_s", "loss_u", "labels_used", "adv_acc"]
-		self.display.print_header("train", keys)
 
-		iter_loader = iter(self.loader)
-
-		for i, ((batch_s, labels_s), batch_u) in enumerate(iter_loader):
+		for i, ((batch_s, labels_s), batch_u) in enumerate(self.loader):
 			batch_s = batch_s.to(self.device).float()
 			labels_s = labels_s.to(self.device).float()
 			batch_u = batch_u.to(self.device).float()

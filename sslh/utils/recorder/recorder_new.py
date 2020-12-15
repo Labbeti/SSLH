@@ -2,7 +2,7 @@
 import json
 import math
 
-from sslh.utils.other_metrics import ContinueMean, ContinueStd
+from mlu.metrics import IncrementalMean, IncrementalStd
 from sslh.utils.recorder.recorder_abc import RecorderABC
 
 from time import time
@@ -52,16 +52,16 @@ class Recorder(RecorderABC):
 
 	def set_point(self, key: str, value: float):
 		self._epoch_continues[key] = {
-			"mean": ContinueMean(),
-			"std": ContinueStd(),
+			"mean": IncrementalMean(),
+			"std": IncrementalStd(),
 		}
 		self.add_point(key, value)
 
 	def register_key(self, key: str):
 		if key not in self._epoch_continues.keys():
 			self._epoch_continues[key] = {
-				"mean": ContinueMean(),
-				"std": ContinueStd(),
+				"mean": IncrementalMean(),
+				"std": IncrementalStd(),
 			}
 
 	def register_keys(self, keys: Iterable[str]):

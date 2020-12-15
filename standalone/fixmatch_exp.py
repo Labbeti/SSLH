@@ -13,24 +13,29 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
+from mlu.datasets.wrappers import NoLabelDataset, OnlyLabelDataset, ZipDataset
+from mlu.nn import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
+from mlu.utils.misc import get_datetime, reset_seed
+from mlu.utils.zip_cycle import ZipCycle
+
 from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
-from sslh.datasets.wrappers.multiple_dataset import MultipleDataset
-from sslh.datasets.wrappers.no_label_dataset import NoLabelDataset
 from sslh.fixmatch.loss import FixMatchLoss
 from sslh.fixmatch.trainer import FixMatchTrainer
 from sslh.fixmatch.trainer_adv import FixMatchTrainerAdv
 from sslh.fixmatch.trainer_mixup import FixMatchTrainerMixUp
 from sslh.fixmatch.trainer_mixup_shuffle import FixMatchTrainerMixUpShuffle
+from sslh.fixmatch.trainer_mixup_teacher import FixMatchTrainerMixUpTeacher
+from sslh.fixmatch.trainer_teacher import FixMatchTrainerTeacher
+from sslh.fixmatch.trainer_teacher_label_u import FixMatchTrainerTeacherLabelU
 from sslh.fixmatch.trainer_uniloss import FixMatchTrainerUniLoss
+from sslh.mixmatch.warmup import WarmUp
 from sslh.utils.args import post_process_args, check_args, add_common_args
 from sslh.utils.cross_validation import cross_validation
-from sslh.utils.misc import build_optimizer, build_scheduler, get_datetime, reset_seed, build_tensorboard_writer, build_checkpoint, get_prefix
+from sslh.utils.misc import build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix
 from sslh.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric, MaxMetric
 from sslh.utils.recorder.recorder import Recorder
 from sslh.utils.save import save_results
-from sslh.utils.torch import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
 from sslh.utils.types import str_to_bool, str_to_optional_str
-from sslh.utils.zip_cycle import ZipCycle
 from sslh.validation.validater import Validater
 
 from time import time
@@ -92,6 +97,21 @@ def create_args() -> Namespace:
 	group_fm.add_argument("--use_mixup_shuffle", type=str_to_bool, default=False,
 		help="Use MixUp between batch with itself shuffled (no mix between labeled and unlabeled data). (default: False)")
 
+	group_fm.add_argument("--use_teacher", type=str_to_bool, default=False,
+		help="Use a teacher for guessing labels. The teacher is updated with an EMA.")
+	group_fm.add_argument("--ema_decay", "--decay", type=float, default=0.999,
+		help="EMA decay used by FixMatch-Teacher.")
+	group_fm.add_argument("--use_teacher_true_label_u", type=str_to_bool, default=False,
+		help="Use a teacher for guessing labels. The teacher is updated with an EMA.")
+
+	group_fm.add_argument("--use_warmup", type=str_to_bool, default=False,
+		help="Use WarmUp on lambda_u hparam every epochs. Compatible with most of the training variants.")
+	group_fm.add_argument("--warmup_nb_epochs", type=int, default=10,
+		help="The number of epochs before warmup reach the lambda_u max value.")
+
+	group_fm.add_argument("--use_mixup_teacher", type=str_to_bool, default=False,
+		help="Combine MixUp and Teacher with FixMatch.")
+
 	args = parser.parse_args()
 	args = post_process_args(args)
 	check_args(args)
@@ -115,7 +135,7 @@ def run_fixmatch_exp(args: Namespace, start_date: str, fold_val: Optional[int], 
 		dataset_train_augm_strong = interface.get_dataset_train_augm_strong(args, folds_train)
 		dataset_train = dataset_train_augm_weak
 
-		indexes_s, indexes_u = interface.get_indexes(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
+		indexes_s, indexes_u = interface.generate_indexes_for_split(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
 		dataset_train_s_augm_weak = Subset(dataset_train_augm_weak, indexes_s)
 		dataset_train_u_augm_weak = Subset(dataset_train_augm_weak, indexes_u)
 		dataset_train_u_augm_strong = Subset(dataset_train_augm_strong, indexes_u)
@@ -123,10 +143,17 @@ def run_fixmatch_exp(args: Namespace, start_date: str, fold_val: Optional[int], 
 		dataset_train_u_augm_weak = NoLabelDataset(dataset_train_u_augm_weak)
 		dataset_train_u_augm_strong = NoLabelDataset(dataset_train_u_augm_strong)
 
-		dataset_train_u_augm_weak_strong = MultipleDataset([dataset_train_u_augm_weak, dataset_train_u_augm_strong])
+		if not args.use_teacher_true_label_u:
+			dataset_train_u_augm_weak_strong = ZipDataset([dataset_train_u_augm_weak, dataset_train_u_augm_strong])
+		else:
+			dataset_train = interface.get_dataset_train(args, folds_train)
+			dataset_train_u = Subset(dataset_train, indexes_u)
+			dataset_train_u_labels = OnlyLabelDataset(dataset_train_u)
+
+			dataset_train_u_augm_weak_strong = ZipDataset([dataset_train_u_augm_weak, dataset_train_u_augm_strong, dataset_train_u_labels])
 	else:
 		dataset_train = interface.get_dataset_train(args, folds_train)
-		indexes_s, indexes_u = interface.get_indexes(dataset_train, [args.supervised_ratio, 1.0 - args.supervised_ratio])
+		indexes_s, indexes_u = interface.generate_indexes_for_split(dataset_train, [args.supervised_ratio, 1.0 - args.supervised_ratio])
 
 		dataset_train_s = Subset(dataset_train, indexes_s)
 		dataset_train_u = Subset(dataset_train, indexes_u)
@@ -216,6 +243,28 @@ def run_fixmatch_exp(args: Namespace, start_date: str, fold_val: Optional[int], 
 			lambda_u=args.lambda_u,
 			alpha=args.alpha,
 		)
+	elif args.use_teacher:
+		trainer = FixMatchTrainerTeacher(
+			model, activation, optim, loader_train, metrics_train_s, metrics_train_u, recorder, criterion,
+			threshold=args.threshold,
+			lambda_u=args.lambda_u,
+			decay=args.ema_decay,
+		)
+	elif args.use_teacher_true_label_u:
+		trainer = FixMatchTrainerTeacherLabelU(
+			model, activation, optim, loader_train, metrics_train_s, metrics_train_u, recorder, criterion,
+			threshold=args.threshold,
+			lambda_u=args.lambda_u,
+			decay=args.ema_decay,
+		)
+	elif args.use_mixup_teacher:
+		trainer = FixMatchTrainerMixUpTeacher(
+			model, activation, optim, loader_train, metrics_train_s, metrics_train_u, recorder, criterion,
+			threshold=args.threshold,
+			lambda_u=args.lambda_u,
+			alpha=args.alpha,
+			decay=args.ema_decay,
+		)
 	else:
 		trainer = FixMatchTrainer(
 			model, activation, optim, loader_train, metrics_train_s, metrics_train_u, recorder, criterion,
@@ -226,6 +275,10 @@ def run_fixmatch_exp(args: Namespace, start_date: str, fold_val: Optional[int], 
 
 	if sched is not None:
 		validator.add_callback_on_end(sched)
+
+	if args.use_warmup:
+		warmup = WarmUp(max_value=args.lambda_u, nb_steps=args.warmup_nb_epochs, obj=trainer, attr_name="lambda_u")
+		validator.add_callback_on_end(warmup)
 
 	print("Dataset : {:s} (train={:d} (supervised={:d}, unsupervised={:d}), val={:d}, eval={:s}).".format(
 		args.dataset_name,
@@ -241,6 +294,7 @@ def run_fixmatch_exp(args: Namespace, start_date: str, fold_val: Optional[int], 
 	for epoch in range(args.nb_epochs):
 		trainer.train(epoch)
 		validator.val(epoch)
+		print()
 
 	print("\nEnd {:s} training. (duration = {:.2f})".format(TRAIN_NAME, time() - start_time))
 

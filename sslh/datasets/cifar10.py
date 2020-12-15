@@ -1,17 +1,18 @@
 
 from argparse import Namespace
 
+from mlu.utils.convert import ToNumpy
+
 from sslh.augments.get_pool import get_pool_img_with_name, add_process_for_pool
-from sslh.augments.utils import ToNumpy
 from sslh.datasets.abc import DatasetInterface
 from sslh.datasets.dataset_sized import DatasetSized
 from sslh.datasets.transform import get_transform_self_supervised_rotate
-from sslh.datasets.wrappers.onehot_dataset import OneHotDataset
+from mlu.datasets.wrappers import OneHotDataset
 from sslh.models.wrn28_2 import WideResNet28, WideResNet28Rot
 from sslh.models.vgg import VGGRot, VGG11Rot
 
 from torchvision.datasets import CIFAR10
-from torchvision.transforms import Compose, RandomChoice, ToTensor, Normalize
+from torchvision.transforms import Compose, RandomChoice, Normalize, ToTensor
 from typing import Callable, Optional, List
 
 
@@ -74,14 +75,12 @@ class CIFAR10Interface(DatasetInterface):
 		# TODO : check classes order
 		return ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"][index]
 
-	def _get_pre_post_processes(self) -> (Callable, Callable):
+	def _get_pre_post_processes(self) -> (Optional[Callable], Optional[Callable]):
 		# Add preprocessing before each augmentation
-		pre_process_fn = ToNumpy()
+		pre_process_fn = None
 
 		# Add postprocessing after each augmentation (shape : [32, 32, 3] -> [3, 32, 32])
 		post_process_fn = Compose([
-			ToNumpy(),
 			ToTensor(),
-			Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 		])
 		return pre_process_fn, post_process_fn

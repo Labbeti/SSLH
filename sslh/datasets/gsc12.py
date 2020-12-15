@@ -5,7 +5,7 @@ from sslh.datasets.dataset_sized import DatasetSized
 from sslh.datasets.gsc import GSCInterface
 from sslh.datasets.detail.gsc_ds import SpeechCommand10
 from sslh.datasets.module_call import ModuleCall
-from sslh.datasets.wrappers.onehot_dataset import OneHotDataset
+from mlu.datasets.wrappers import OneHotDataset
 from torch.nn import Module
 
 

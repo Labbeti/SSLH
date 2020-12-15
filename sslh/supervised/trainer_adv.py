@@ -7,8 +7,8 @@ from metric_utils.metrics import Metrics
 
 from sslh.supervised.loss import CrossEntropyWithVectors
 from sslh.supervised.trainer import SupervisedTrainer
-from sslh.utils.display import ColumnDisplay
-from sslh.utils.display_abc import DisplayABC
+from mlu.utils.printers import ColumnPrinter
+from mlu.utils.printers import PrinterABC
 from sslh.utils.other_metrics import CategoricalAccuracyOnehot
 from sslh.utils.recorder.recorder_abc import RecorderABC
 from sslh.utils.types import IterableSized
@@ -28,7 +28,7 @@ class SupervisedTrainerAdv(SupervisedTrainer):
 		metrics: Dict[str, Metrics],
 		recorder: RecorderABC,
 		criterion: Callable = CrossEntropyWithVectors(),
-		display: DisplayABC = ColumnDisplay(),
+		display: PrinterABC = ColumnPrinter(),
 		device: torch.device = torch.device("cuda"),
 		criterion_adv: Callable = CrossEntropyWithVectors(),
 		epsilon_adv: float = 1e-2,
@@ -53,12 +53,8 @@ class SupervisedTrainerAdv(SupervisedTrainer):
 			metric.reset()
 
 		self.recorder.start_record(epoch)
-		keys = list(self.metrics.keys()) + ["loss", "adv_acc"]
-		self.display.print_header("train", keys)
 
-		iter_loader = iter(self.loader)
-
-		for i, (x, y) in enumerate(iter_loader):
+		for i, (x, y) in enumerate(self.loader):
 			x = x.to(self.device).float()
 			y = y.to(self.device).float()
 

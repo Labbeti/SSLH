@@ -2,12 +2,10 @@
 import torch
 
 from metric_utils.metrics import CategoricalAccuracy, Metrics
-from sslh.utils.torch import CrossEntropyWithVectors, Entropy
+from mlu.nn import CrossEntropyWithVectors, Entropy
 
-from abc import ABC
 from torch import Tensor
-from torch.nn import Module
-from typing import Callable, Tuple, Optional, Union
+from typing import Callable, Tuple, Union
 
 
 class CategoricalAccuracyOnehot(CategoricalAccuracy):
@@ -50,7 +48,7 @@ class MaxMetric(FuncMetric):
 
 
 class CrossEntropyMetric(FuncMetric):
-	def __init__(self, dim: int, reduction: str = "batchmean", log_input: bool = False):
+	def __init__(self, dim: int, reduction: str = "mean", log_input: bool = False):
 		ce = CrossEntropyWithVectors(dim=dim, reduction=reduction, log_input=log_input)
 		super().__init__(lambda input_, target: ce(input_, target))
 
@@ -101,64 +99,3 @@ class BinaryConfidenceAccuracy(Metrics):
 
 			self.accumulate_value += self.value_
 			return self.accumulate_value / self.count
-
-
-class ContinueMetric(Module, ABC):
-	def reset(self):
-		raise NotImplementedError("Abstract method")
-
-	def add(self, item: Tensor):
-		raise NotImplementedError("Abstract method")
-
-	def get_current(self) -> Optional[Tensor]:
-		raise NotImplementedError("Abstract method")
-
-
-class ContinueMean(ContinueMetric):
-	def __init__(self):
-		super().__init__()
-		self._sum = None
-		self._counter = 0
-
-	def reset(self):
-		self._sum = None
-		self._counter = 0
-
-	def add(self, item: Tensor):
-		if isinstance(item, float):
-			item = torch.scalar_tensor(item)
-		if self._sum is None:
-			self._sum = item
-			self._counter = 1
-		else:
-			self._sum += item
-			self._counter += 1
-
-	def get_current(self) -> Optional[Tensor]:
-		return self.get_mean()
-
-	def get_mean(self) -> Optional[Tensor]:
-		if self._sum is not None:
-			return self._sum / self._counter
-		else:
-			return None
-
-
-class ContinueStd(ContinueMetric):
-	def __init__(self):
-		super().__init__()
-		self._items = []
-
-	def reset(self):
-		self._items = []
-
-	def add(self, item: Tensor):
-		if isinstance(item, float):
-			item = torch.scalar_tensor(item)
-		self._items.append(item)
-
-	def get_current(self) -> Optional[Tensor]:
-		return self.get_std()
-
-	def get_std(self) -> Optional[Tensor]:
-		return torch.stack(self._items).std(unbiased=False) if len(self._items) > 0 else None

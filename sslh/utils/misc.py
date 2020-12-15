@@ -1,15 +1,12 @@
 
-import datetime
-import numpy as np
 import os.path as osp
-import random
-import torch
 
 from argparse import Namespace
 
+from mlu.optim import CosineLRScheduler, SoftCosineLRScheduler
+
 from sslh.datasets.abc import DatasetInterface
-from sslh.models.checkpoint import CheckPointABC, CheckPoint, CheckPointMultiple
-from sslh.utils.schedulers import CosineLRScheduler, SoftCosineLRScheduler
+from sslh.models.checkpoint import CheckPointABC, CheckPointMultiple
 from sslh.utils.radam import RAdam, PlainRAdam, AdamW
 
 from torch import Tensor
@@ -18,7 +15,7 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import MultiStepLR, LambdaLR
 from torch.optim.optimizer import Optimizer
 from torch.utils.tensorboard.writer import SummaryWriter
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, TypeVar, Union
 
 
 def build_optimizer(args: Namespace, model: Module) -> Optimizer:
@@ -27,24 +24,24 @@ def build_optimizer(args: Namespace, model: Module) -> Optimizer:
 		Available optimizers : Adam, SGD, RAdam, PlainRAdam and AdamW.
 
 		:param args: The argparse arguments. Must contains the attributes "optimizer", learning_rate and weight_decay.
-			If args.scheduler == "SGD", must contains the attribute "momentum".
+			If args.scheduler == "SGD", must contains the attribute "momentum" and "use_nesterov".
 		:param model: The torch module to update with the optimizer.
 		:returns: The optimizer to use.
 	"""
 	name = args.optimizer.lower()
 
-	if args.weight_decay is None:
-		kwargs = dict(params=model.parameters(), lr=args.learning_rate)
-	else:
-		kwargs = dict(params=model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+	kwargs = dict(params=model.parameters(), lr=args.learning_rate)
+	if args.weight_decay is not None:
+		kwargs["weight_decay"] = args.weight_decay
 
 	if name == "Adam".lower():
 		optim = Adam(**kwargs)
 	elif name == "SGD".lower():
-		if args.momentum is None:
-			optim = SGD(**kwargs)
-		else:
-			optim = SGD(**kwargs, momentum=args.momentum)
+		if args.momentum is not None:
+			kwargs["momentum"] = args.momentum
+		if args.use_nesterov is not None:
+			kwargs["nesterov"] = args.use_nesterov
+		optim = SGD(**kwargs)
 	elif name == "RAdam".lower():
 		optim = RAdam(**kwargs)
 	elif name == "PlainRAdam".lower():
@@ -134,15 +131,6 @@ def build_checkpoint(
 	return checkpoint
 
 
-def get_datetime() -> str:
-	"""
-		Returns the date in a specific format : "YYYY_MM_DD_hh:mm:ss".
-		:returns: The current date.
-	"""
-	now = str(datetime.datetime.now())
-	return now[:10] + "_" + now[11:-7]
-
-
 def to_dict_rec(obj: Any, class_name_key: Optional[str] = "__class__") -> Union[dict, list]:
 	"""
 		Convert an object to a dictionary.
@@ -179,55 +167,6 @@ def to_dict_rec(obj: Any, class_name_key: Optional[str] = "__class__") -> Union[
 		return obj
 
 
-def random_rect(
-	width_img: int, height_img: int, width_range: Tuple[float, float], height_range: Tuple[float, float]
-) -> (int, int, int, int):
-	"""
-		Create a random rectangle inside an area.
-
-		:param width_img: The maximal width.
-		:param height_img: The maximal height.
-		:param width_range: The width ratio range of the rectangle. Ex: (0.1, 0.5) => width is sampled from (0.1 * width, 0.5 * width).
-		:param height_range: The height ratio range of the rectangle. Ex: (0.0, 0.9) => height is sampled from (0.0, 0.9 * height).
-		:returns: The limits (left, right, top, down) of the rectangle created.
-	"""
-	assert width_range[0] <= width_range[1] and height_range[0] <= height_range[1]
-
-	width_min, width_max = max(int(width_range[0] * width_img), 1), max(int(width_range[1] * width_img), 2)
-	height_min, height_max = max(int(height_range[0] * height_img), 1), max(int(height_range[1] * height_img), 2)
-
-	if width_min != width_max:
-		width = torch.randint(low=width_min, high=width_max, size=[1]).item()
-	else:
-		width = width_min
-
-	if height_min != height_max:
-		height = torch.randint(low=height_min, high=height_max, size=[1]).item()
-	else:
-		height = height_min
-
-	left = torch.randint(low=0, high=width_img - width, size=[1]).item()
-	top = torch.randint(low=0, high=height_img - height, size=[1]).item()
-	right = left + width
-	down = top + height
-
-	return left, right, top, down
-
-
-def reset_seed(seed: int):
-	"""
-		Set the seed of packages : random, numpy, torch, torch.cuda, torch.backends.cudnn.
-
-		:param seed: The seed to set.
-	"""
-	random.seed(seed)
-	np.random.seed(seed)
-	torch.manual_seed(seed)
-	torch.cuda.manual_seed_all(seed)
-	torch.backends.cudnn.deterministic = True
-	torch.backends.cudnn.benchmark = False
-
-
 def interpolation(min_: float, max_: float, coefficient: float) -> float:
 	"""
 		Compute the linear interpolation between min_ and max_ with a coefficient.
@@ -240,7 +179,10 @@ def interpolation(min_: float, max_: float, coefficient: float) -> float:
 	return (max_ - min_) * coefficient + min_
 
 
-def normalize(value: float, old_min: float, old_max: float, new_min: float = 0.0, new_max: float = 1.0) -> float:
+T = TypeVar("T")
+
+
+def normalize(value: T, old_min: T, old_max: T, new_min: T = 0.0, new_max: T = 1.0) -> T:
 	"""
 		Normalize a value from range [old_min, old_max] to [new_min, new_max].
 

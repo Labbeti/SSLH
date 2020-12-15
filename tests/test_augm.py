@@ -5,8 +5,10 @@ from argparse import Namespace
 from augmentation_utils.signal_augmentations import TimeStretch
 from matplotlib import pyplot as plt
 
-from sslh.augments.signal_augments import ResizePadCut
-from sslh.augments.utils import Squeeze, PadUpTo
+from mlu.transforms.waveform import StretchPadCrop
+from mlu.utils.modules import Squeeze
+
+from sslh.augments.utils import PadUpTo
 from sslh.datasets.gsc import GSCInterface
 
 from torch import Tensor
@@ -58,7 +60,7 @@ class TestStretch(TestCase):
 
 		rate = (0.9, 0.9)
 		stretch = TimeStretch(1.0, rate=rate)
-		stretch_pad = ResizePadCut(1.0, rate=rate)
+		stretch_pad = StretchPadCrop(rate=rate)
 
 		print("Original signal shape: ", signal.shape)
 

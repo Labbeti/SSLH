@@ -29,14 +29,31 @@ def str_to_bool(x: str) -> bool:
 		raise RuntimeError("Invalid boolean argument \"{:s}\".".format(x))
 
 
+def str_to_optional_bool(x: str) -> Optional[bool]:
+	"""
+		Convert a string to optional bool value. Case insensitive.
+		:param x:
+			x in ["none"] => None
+			x in ["true", "1", "yes", "y"] => True
+			x in ["false", "0", "no", "n"] => False
+			_ => RuntimeError
+		:returns: The corresponding boolean or None value.
+	"""
+	x_low = str(x).lower()
+	if x_low in ["none"]:
+		return None
+	else:
+		return str_to_bool(x)
+
+
 def str_to_optional_str(x: str) -> Optional[str]:
 	"""
 		Convert string to optional string value. Case insensitive.
 		:param x: Any string value.
 		:returns: None if x == "None", otherwise the string value.
 	"""
-	x = str(x)
-	if x.lower() == "none":
+	x_low = str(x).lower()
+	if x_low in ["none"]:
 		return None
 	else:
 		return x
@@ -48,8 +65,8 @@ def str_to_optional_int(x: str) -> Optional[int]:
 		:param x: Any string value.
 		:returns: Integer value, None or throw ValueError exception.
 	"""
-	x = str(x)
-	if x.lower() == "none":
+	x_low = str(x).lower()
+	if x_low in ["none"]:
 		return None
 	else:
 		return int(x)

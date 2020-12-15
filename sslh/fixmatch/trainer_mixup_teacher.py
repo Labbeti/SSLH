@@ -1,5 +1,8 @@
+
+import copy
 import torch
 
+from mlu.nn import EMA
 from mlu.utils.printers import ColumnPrinter, PrinterABC
 from mlu.utils.misc import get_lr
 
@@ -10,12 +13,14 @@ from sslh.utils.other_metrics import Metrics
 from sslh.utils.recorder.recorder_abc import RecorderABC
 from sslh.utils.types import IterableSized
 
+from torch import Tensor
 from torch.nn import Module
+from torch.nn.functional import one_hot
 from torch.optim.optimizer import Optimizer
 from typing import Callable, Dict
 
 
-class FixMatchTrainerMixUp(FixMatchTrainer):
+class FixMatchTrainerMixUpTeacher(FixMatchTrainer):
 	def __init__(
 		self,
 		model: Module,
@@ -32,6 +37,7 @@ class FixMatchTrainerMixUp(FixMatchTrainer):
 		lambda_s: float = 1.0,
 		lambda_u: float = 1.0,
 		alpha: float = 0.75,
+		decay: float = 0.999,
 	):
 		"""
 			FixMatch trainer with MixUp between labeled and shuffled labeled data, unlabeled and shuffled unlabeled data.
@@ -68,6 +74,8 @@ class FixMatchTrainerMixUp(FixMatchTrainer):
 			lambda_u,
 		)
 		self.mixup = MixUp(alpha, apply_max=True)
+		self.teacher = copy.deepcopy(model)
+		self.ema = EMA(self.teacher, decay)
 
 	def _train_impl(self, epoch: int):
 		self.model.train()
@@ -135,5 +143,15 @@ class FixMatchTrainerMixUp(FixMatchTrainer):
 
 				self.display.print_current_values(self.recorder.get_current_means(), i, len(self.loader), epoch)
 
+				self.ema.update(self.model)
+
 		self.recorder.add_point("train/lr", get_lr(self.optim))
 		self.recorder.end_record(epoch)
+
+	def guess_label(self, batch_u_augm_weak: Tensor) -> (Tensor, Tensor):
+		logits_u_augm_weak = self.teacher(batch_u_augm_weak)
+		pred_u_augm_weak = self.activation(logits_u_augm_weak, dim=1)
+
+		nb_classes = pred_u_augm_weak.shape[1]
+		labels_u = one_hot(pred_u_augm_weak.argmax(dim=1), nb_classes)
+		return labels_u, pred_u_augm_weak

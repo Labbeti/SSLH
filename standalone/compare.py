@@ -13,11 +13,12 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
+from mlu.utils.misc import get_datetime, reset_seed
+
 from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
 from sslh.utils.args import post_process_args, check_args, add_common_args
 from sslh.models.checkpoint import CheckPoint
-from sslh.utils.misc import get_datetime, reset_seed
-from sslh.validation.comparator import Comparator
+from sslh.validation.models_comparator import ModelsComparator
 
 from time import time
 from torch.utils.data import DataLoader
@@ -64,7 +65,7 @@ def run_compare(args: Namespace, start_date: str, fold_val: Optional[int], inter
 	print("\nStart {:s} evaluation on {:s} with model \"{:s}\" and {:d} epochs ({:s})...".format(TRAIN_NAME, args.dataset_name, model_name, args.nb_epochs, args.tag))
 	start_time = time()
 
-	comparator = Comparator(models, activation, loader_val)
+	comparator = ModelsComparator(models, activation, loader_val)
 	comparator.val(0)
 
 	print("End {:s}. (duration = {:.2f})".format(TRAIN_NAME, time() - start_time))

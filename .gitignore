@@ -6,6 +6,7 @@
 __pycache__/
 build/
 dataset/
+datasets/
 dist/
 old/
 results/

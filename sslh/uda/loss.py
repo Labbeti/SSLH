@@ -1,6 +1,6 @@
 
 from sslh.fixmatch.loss import FixMatchLoss
-from sslh.utils.torch import CrossEntropyWithVectors
+from mlu.nn import CrossEntropyWithVectors
 
 from typing import Callable
 

@@ -1,5 +1,5 @@
 
-from sslh.utils.zip_cycle import ZipCycle
+from mlu.utils.zip_cycle import ZipCycle
 
 
 def test():

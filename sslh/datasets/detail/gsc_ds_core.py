@@ -50,7 +50,7 @@ class SPEECHCOMMANDS(Dataset):
         folder_in_archive = os.path.join(FOLDER_IN_ARCHIVE, basename)
 
         self._path = os.path.join(root, folder_in_archive)
-        print(self._path)
+        # print(self._path)
 
         if download:
             self._download()

@@ -6,7 +6,9 @@ from sslh.caller import Caller
 class TrainerABC(Caller, ABC):
 	"""
 		Abstract class for trainers.
-		All subclasses must implements "_train_impl(self, epoch: int)" method.
+
+		Abstract methods:
+			- _train_impl(self, epoch: int):
 	"""
 	def __init__(self):
 		super().__init__()
@@ -17,6 +19,8 @@ class TrainerABC(Caller, ABC):
 	def train(self, epoch: int):
 		"""
 			Start training process.
+
+			:param epoch: The current epoch number.
 		"""
 		self._on_start()
 		self._train_impl(epoch)

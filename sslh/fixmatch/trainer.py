@@ -1,12 +1,12 @@
 import torch
 
+from mlu.utils.printers import ColumnPrinter, PrinterABC
+from mlu.utils.misc import get_lr
+
 from sslh.fixmatch.loss import FixMatchLoss
 from sslh.trainer_abc import TrainerABC
-from sslh.utils.display import ColumnDisplay
-from sslh.utils.display_abc import DisplayABC
 from sslh.utils.other_metrics import Metrics
 from sslh.utils.recorder.recorder_abc import RecorderABC
-from sslh.utils.torch import get_lr
 from sslh.utils.types import IterableSized
 
 from torch import Tensor
@@ -27,7 +27,7 @@ class FixMatchTrainer(TrainerABC):
 		metrics_u: Dict[str, Metrics],
 		recorder: RecorderABC,
 		criterion: Callable = FixMatchLoss(),
-		display: DisplayABC = ColumnDisplay(),
+		display: PrinterABC = ColumnPrinter(),
 		device: torch.device = torch.device("cuda"),
 		threshold: float = 0.5,
 		lambda_s: float = 1.0,
@@ -72,12 +72,8 @@ class FixMatchTrainer(TrainerABC):
 				metric.reset()
 
 		self.recorder.start_record(epoch)
-		keys = list(self.metrics_s.keys()) + list(self.metrics_u.keys()) + ["loss", "loss_s", "loss_u", "labels_used"]
-		self.display.print_header("train", keys)
 
-		iter_loader = iter(self.loader)
-
-		for i, ((batch_s_augm_weak, labels_s), (batch_u_augm_weak, batch_u_augm_strong)) in enumerate(iter_loader):
+		for i, ((batch_s_augm_weak, labels_s), (batch_u_augm_weak, batch_u_augm_strong)) in enumerate(self.loader):
 			batch_s_augm_weak = batch_s_augm_weak.to(self.device).float()
 			labels_s = labels_s.to(self.device).float()
 			batch_u_augm_weak = batch_u_augm_weak.to(self.device).float()

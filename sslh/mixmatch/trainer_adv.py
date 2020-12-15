@@ -8,11 +8,11 @@ from metric_utils.metrics import Metrics
 
 from sslh.mixmatch.loss import MixMatchLoss
 from sslh.mixmatch.trainer import MixMatchTrainer
-from sslh.utils.display import ColumnDisplay
-from sslh.utils.display_abc import DisplayABC
+from mlu.utils.printers import ColumnPrinter
+from mlu.utils.printers import PrinterABC
 from sslh.utils.other_metrics import CategoricalAccuracyOnehot
 from sslh.utils.recorder.recorder_abc import RecorderABC
-from sslh.utils.torch import CrossEntropyWithVectors
+from mlu.nn import CrossEntropyWithVectors
 from sslh.utils.types import IterableSized
 
 from torch.nn import Module
@@ -34,7 +34,7 @@ class MixMatchTrainerAdv(MixMatchTrainer):
 		metrics_u_mix: Dict[str, Metrics],
 		recorder: RecorderABC,
 		criterion: Callable = MixMatchLoss(),
-		display: DisplayABC = ColumnDisplay(),
+		display: PrinterABC = ColumnPrinter(),
 		device: torch.device = torch.device("cuda"),
 		temperature: float = 0.5,
 		alpha: float = 0.75,
@@ -84,12 +84,8 @@ class MixMatchTrainerAdv(MixMatchTrainer):
 				metric.reset()
 
 		self.recorder.start_record(epoch)
-		keys = list(self.metrics_s_mix.keys()) + list(self.metrics_u_mix.keys()) + ["loss", "loss_s", "loss_u", "lambda_u", "adv_acc", "mixup_lambda"]
-		self.display.print_header("train", keys)
 
-		iter_loader = iter(self.loader)
-
-		for i, ((batch_s, labels_s), batch_u_multiple) in enumerate(iter_loader):
+		for i, ((batch_s, labels_s), batch_u_multiple) in enumerate(self.loader):
 			batch_s = batch_s.to(self.device).float()
 			labels_s = labels_s.to(self.device).float()
 			batch_u_multiple = torch.stack(batch_u_multiple).to(self.device).float()

@@ -1,7 +1,7 @@
 
 import torch
 
-from sslh.utils.torch import CrossEntropyWithVectors
+from mlu.nn import CrossEntropyWithVectors
 
 from torch import Tensor
 from torch.nn import Module

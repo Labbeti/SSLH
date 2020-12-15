@@ -6,7 +6,7 @@ from sslh.utils.recorder.recorder_abc import RecorderABC
 
 from time import time
 from torch.utils.tensorboard import SummaryWriter
-from typing import Dict, List, Optional, Union, Iterable
+from typing import Dict, Optional, Union, Iterable
 
 
 class Recorder(RecorderABC):
@@ -124,9 +124,6 @@ class Recorder(RecorderABC):
 	def get_writer(self) -> Optional[SummaryWriter]:
 		return self.writer
 
-	def get_epoch_data(self) -> Dict[str, List[float]]:
-		return self._epoch_data
-
 	def get_elapsed_time(self) -> float:
 		return time() - self.__start_time
 
@@ -155,8 +152,7 @@ class Recorder(RecorderABC):
 		self.__writer_to_update = True
 
 	def get_current_means(self) -> Dict[str, float]:
-		epoch_data = self.get_epoch_data()
-		current_means = {key: np.mean(values) for key, values in epoch_data.items()}
+		current_means = {key: np.mean(values) for key, values in self._epoch_data.items()}
 		return current_means
 
 	def _update_writer(self, epoch: int):

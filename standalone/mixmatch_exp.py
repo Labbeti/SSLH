@@ -13,10 +13,11 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
+from mlu.datasets.wrappers import NoLabelDataset, OnlyLabelDataset, ZipDataset
+from mlu.utils.misc import get_datetime, reset_seed
+from mlu.utils.zip_cycle import ZipCycle
+
 from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
-from sslh.datasets.wrappers.multiple_dataset import MultipleDataset
-from sslh.datasets.wrappers.no_label_dataset import NoLabelDataset
-from sslh.datasets.wrappers.only_label_dataset import OnlyLabelDataset
 from sslh.mixmatch.loss import MixMatchLoss, MixMatchLossNoLabelMix
 from sslh.mixmatch.trainer import MixMatchTrainer
 from sslh.mixmatch.trainer_acc import MixMatchTrainerAcc
@@ -26,15 +27,15 @@ from sslh.mixmatch.trainer_no_label_mix import MixMatchTrainerNoLabelMix
 from sslh.mixmatch.trainer_no_warmup import MixMatchTrainerNoWarmUp
 from sslh.mixmatch.trainer_true_label import MixMatchTrainerTrueLabel
 from sslh.mixmatch.warmup import WarmUp
+
 from sslh.utils.args import post_process_args, check_args, add_common_args
 from sslh.utils.cross_validation import cross_validation
-from sslh.utils.misc import build_optimizer, build_scheduler, get_datetime, reset_seed, build_tensorboard_writer, build_checkpoint, get_prefix
+from sslh.utils.misc import build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix
 from sslh.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric, MaxMetric
 from sslh.utils.recorder.recorder import Recorder
 from sslh.utils.save import save_results
 from sslh.utils.types import str_to_optional_str, str_to_bool
-from sslh.utils.torch import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
-from sslh.utils.zip_cycle import ZipCycle
+from mlu.nn import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
 from sslh.validation.validater import Validater
 
 from time import time
@@ -120,7 +121,7 @@ def run_mixmatch_exp(args: Namespace, start_date: str, fold_val: Optional[int], 
 	if not args.use_adversarial:
 		dataset_train_augm_weak = interface.get_dataset_train_augm_weak(args, folds_train)
 
-		indexes_s, indexes_u = interface.get_indexes(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
+		indexes_s, indexes_u = interface.generate_indexes_for_split(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
 		dataset_train_s = Subset(dataset_train_augm_weak, indexes_s)
 		dataset_train_u = Subset(dataset_train_augm_weak, indexes_u)
 		if args.use_true_label_u:
@@ -128,19 +129,19 @@ def run_mixmatch_exp(args: Namespace, start_date: str, fold_val: Optional[int], 
 		dataset_train_u = NoLabelDataset(dataset_train_u)
 
 		# Apply callables on the same batch u
-		dataset_train_u_multiple = MultipleDataset([dataset_train_u] * args.nb_augms)
+		dataset_train_u_multiple = ZipDataset([dataset_train_u] * args.nb_augms)
 
 		if args.use_true_label_u:
-			dataset_train_u_multiple = MultipleDataset([dataset_train_u_multiple, dataset_train_u_labels])
+			dataset_train_u_multiple = ZipDataset([dataset_train_u_multiple, dataset_train_u_labels])
 	else:
 		dataset_train_augm_weak = interface.get_dataset_train(args, folds_train)
-		indexes_s, indexes_u = interface.get_indexes(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
+		indexes_s, indexes_u = interface.generate_indexes_for_split(dataset_train_augm_weak, [args.supervised_ratio, 1.0 - args.supervised_ratio])
 
 		dataset_train_s = Subset(dataset_train_augm_weak, indexes_s)
 		dataset_train_u = Subset(dataset_train_augm_weak, indexes_u)
 		dataset_train_u = NoLabelDataset(dataset_train_u)
 
-		dataset_train_u_multiple = MultipleDataset([dataset_train_u] * args.nb_augms)
+		dataset_train_u_multiple = ZipDataset([dataset_train_u] * args.nb_augms)
 
 	dataset_val = interface.get_dataset_val(args, folds_val)
 	dataset_eval = interface.get_dataset_eval(args, None)

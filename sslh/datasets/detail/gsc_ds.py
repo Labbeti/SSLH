@@ -176,7 +176,7 @@ class SpeechCommands(SPEECHCOMMANDS):
 					print("%s is in both train and testing list" % p)
 					raise ValueError()
 
-		print("run in %f" % (time.time() - start_time))
+		# print("run in %f" % (time.time() - start_time))
 
 		# Map the list to the corresponding subsets
 		mapper = {

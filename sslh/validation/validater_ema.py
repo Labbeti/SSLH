@@ -1,11 +1,13 @@
 
+import copy
 import torch
 
 from metric_utils.metrics import Metrics
 
+from mlu.nn import EMA
+from mlu.utils.printers import ColumnPrinter, PrinterABC
+
 from sslh.models.checkpoint import CheckPointABC
-from mlu.utils.printers import ColumnPrinter
-from mlu.utils.printers import PrinterABC
 from sslh.utils.recorder.recorder_abc import RecorderABC
 from sslh.utils.types import IterableSized
 from sslh.validater_abc import ValidaterABC
@@ -14,7 +16,7 @@ from torch.nn import Module
 from typing import Callable, Dict, Optional
 
 
-class Validater(ValidaterABC):
+class ValidaterEMA(ValidaterABC):
 	def __init__(
 		self,
 		model: Module,
@@ -27,9 +29,10 @@ class Validater(ValidaterABC):
 		display: PrinterABC = ColumnPrinter(),
 		device: torch.device = torch.device("cuda"),
 		name: str = "val",
+		decay: float = 0.99,
 	):
 		"""
-			Main class for running a simple validation of a model on a dataset.
+			Main class for running a validation with the exponential moving average of the parameters of a model on a dataset.
 
 			:param model: The model to test.
 			:param activation: The activation function of the model.
@@ -41,6 +44,7 @@ class Validater(ValidaterABC):
 			:param display: The printer object for printing validation results during the loop. (default: ColumnPrinter())
 			:param device: The torch.device to use for validation. (default: torch.device("cuda"))
 			:param name: The name of the validation. (default: "val")
+			:param decay: The EMA parameter for the validation model. (default: 0.99)
 		"""
 		super().__init__()
 		self.model = model
@@ -54,12 +58,17 @@ class Validater(ValidaterABC):
 		self.device = device
 		self.name = name
 
+		self.ema_model = copy.deepcopy(model)
+		self.ema = EMA(self.ema_model, decay=decay)
+
 	def _val_impl(self, epoch: int):
 		self.model.eval()
 		for metric in self.metrics.values():
 			metric.reset()
 
 		self.recorder.start_record(epoch)
+
+		# TODO : update ema_model with ema, but when ?
 
 		for i, (x, y) in enumerate(self.loader):
 			x = x.to(self.device).float()

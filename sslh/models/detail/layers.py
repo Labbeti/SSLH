@@ -1,5 +1,5 @@
 
-from sslh.utils.torch import Mish
+from mlu.nn import Mish
 from torch import nn
 
 
