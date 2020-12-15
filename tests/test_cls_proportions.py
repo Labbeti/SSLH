@@ -2,8 +2,8 @@
 import os.path as osp
 
 from argparse import Namespace
-from sslh.datasets.get_interface import get_dataset_interface
-from sslh.datasets.utils import get_classes_idx
+from ssl.datasets.get_interface import get_dataset_interface
+from ssl.datasets.utils import get_classes_idx
 from matplotlib import pyplot as plt
 
 

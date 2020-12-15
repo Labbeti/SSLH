@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 
-from sslh.datasets.utils import get_classes_idx, shuffle_classes_idx, split_classes_idx
+from ssl.datasets.utils import get_classes_idx, shuffle_classes_idx, split_classes_idx
 from mlu.utils.zip_cycle import ZipCycle
 from mlu.datasets.wrappers import ZipDataset
 

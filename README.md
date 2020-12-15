@@ -1,4 +1,4 @@
-# Semi Supervised Learning with Holistic methods (SSLH)
+# Semi Supervised Learning with holistic methods (SSL)
 
 Holistic methods for Semi-Supervised Learning : MixMatch, ReMixMatch and FixMatch for ESC-10, UrbanSound8k and GoogleSpeechCommands datasets.
 

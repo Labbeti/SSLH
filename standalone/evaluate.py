@@ -15,13 +15,13 @@ from argparse import ArgumentParser, Namespace
 
 from mlu.utils.misc import get_datetime, reset_seed
 
-from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
-from sslh.utils.args import post_process_args, check_args, add_common_args
-from sslh.models.checkpoint import CheckPoint
-from sslh.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric
-from sslh.utils.recorder.recorder import Recorder
-from sslh.utils.types import str_to_optional_str
-from sslh.validation.validater import Validater
+from ssl.datasets.get_interface import get_dataset_interface, DatasetInterface
+from ssl.utils.args import post_process_args, check_args, add_common_args
+from ssl.models.checkpoint import CheckPoint
+from ssl.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric
+from ssl.utils.recorder.recorder import Recorder
+from ssl.utils.types import str_to_optional_str
+from ssl.validation.validater import Validater
 
 from time import time
 from torch.utils.data import DataLoader

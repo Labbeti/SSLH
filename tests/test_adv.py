@@ -5,10 +5,10 @@ import torch
 from argparse import ArgumentParser
 from matplotlib import pyplot as plt
 
-from sslh.datasets.get_interface import get_dataset_interface
-from sslh.utils.adversaries.fgsm import FGSM
-from sslh.utils.adversaries.iterative_fgsm import IterativeFGSM
-from sslh.models.get_model import load_model_from_file
+from ssl.datasets.get_interface import get_dataset_interface
+from ssl.utils.adversaries.fgsm import FGSM
+from ssl.utils.adversaries.iterative_fgsm import IterativeFGSM
+from ssl.models.get_model import load_model_from_file
 from mlu.nn import CrossEntropyWithVectors
 
 

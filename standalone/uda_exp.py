@@ -17,19 +17,19 @@ from mlu.datasets.wrappers import NoLabelDataset, ZipDataset
 from mlu.utils.misc import get_datetime, reset_seed
 from mlu.utils.zip_cycle import ZipCycle
 
-from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
-from sslh.uda.loss import UDALoss
-from sslh.uda.trainer import UDATrainer
-from sslh.uda.trainer_mixup import UDATrainerMixUp
-from sslh.utils.args import post_process_args, check_args, add_common_args
-from sslh.utils.cross_validation import cross_validation
-from sslh.utils.misc import build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix
-from sslh.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric, MaxMetric
-from sslh.utils.recorder.recorder import Recorder
-from sslh.utils.save import save_results
+from ssl.datasets.get_interface import get_dataset_interface, DatasetInterface
+from ssl.uda.loss import UDALoss
+from ssl.uda.trainer import UDATrainer
+from ssl.uda.trainer_mixup import UDATrainerMixUp
+from ssl.utils.args import post_process_args, check_args, add_common_args
+from ssl.utils.cross_validation import cross_validation
+from ssl.utils.misc import build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix
+from ssl.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric, MaxMetric
+from ssl.utils.recorder.recorder import Recorder
+from ssl.utils.save import save_results
 from mlu.nn import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
-from sslh.utils.types import str_to_optional_str, str_to_bool
-from sslh.validation.validater import Validater
+from ssl.utils.types import str_to_optional_str, str_to_bool
+from ssl.validation.validater import Validater
 
 from time import time
 from torch.nn import MSELoss

@@ -8,8 +8,8 @@ from matplotlib import pyplot as plt
 from mlu.transforms.waveform import StretchPadCrop
 from mlu.utils.modules import Squeeze
 
-from sslh.augments.utils import PadUpTo
-from sslh.datasets.gsc import GSCInterface
+from ssl.augments.utils import PadUpTo
+from ssl.datasets.gsc import GSCInterface
 
 from torch import Tensor
 from torch.nn import Sequential

@@ -1,9 +1,9 @@
 from distutils.core import setup
 
 setup(
-	name='sslh',
-	version='1.0',
-	packages=['sslh'],
+	name='ssl',
+	version='1.1',
+	packages=['ssl'],
 	url='https://github.com/Labbeti/SSL.git',
 	license='',
 	author='Etienne Labbé',

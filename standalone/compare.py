@@ -15,10 +15,10 @@ from argparse import ArgumentParser, Namespace
 
 from mlu.utils.misc import get_datetime, reset_seed
 
-from sslh.datasets.get_interface import get_dataset_interface, DatasetInterface
-from sslh.utils.args import post_process_args, check_args, add_common_args
-from sslh.models.checkpoint import CheckPoint
-from sslh.validation.models_comparator import ModelsComparator
+from ssl.datasets.get_interface import get_dataset_interface, DatasetInterface
+from ssl.utils.args import post_process_args, check_args, add_common_args
+from ssl.models.checkpoint import CheckPoint
+from ssl.validation.models_comparator import ModelsComparator
 
 from time import time
 from torch.utils.data import DataLoader

@@ -1,8 +1,8 @@
 
 import torch
 
-from sslh.utils.misc import reset_seed
-from sslh.utils.torch import JSDivLoss, JSDivLossWithLogits, Entropy
+from ssl.utils.misc import reset_seed
+from ssl.utils.torch import JSDivLoss, JSDivLossWithLogits, Entropy
 from torch import Tensor
 from time import time
 from timeit import timeit

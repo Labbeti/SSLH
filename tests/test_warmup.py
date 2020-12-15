@@ -1,4 +1,4 @@
-from sslh.mixmatch.warmup import WarmUp
+from ssl.mixmatch.warmup import WarmUp
 
 
 def test():
