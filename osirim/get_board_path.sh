@@ -12,8 +12,8 @@ case $1 in
 		board_root="/users/samova/elabbe/root/tensorboard/ESC50/default/";;
 	"GSC" )
 		board_root="/users/samova/elabbe/root/tensorboard/GSC/default/";;
-	"GSC10" )
-		board_root="/users/samova/elabbe/root/tensorboard/GSC10/default/";;
+	"GSC12" )
+		board_root="/users/samova/elabbe/root/tensorboard/GSC12/default/";;
 	"AUDIOSET" )
 		board_root="/users/samova/elabbe/root/tensorboard/AudioSet/default/";;
 esac

@@ -3,7 +3,7 @@ import os.path as osp
 
 from argparse import Namespace
 from mlu.transforms.waveform import StretchPadCrop
-from ssl.datasets.get_interface import get_dataset_interface
+from sslh.dataset.get_interface import get_dataset_interface
 
 
 def create_args() -> Namespace:

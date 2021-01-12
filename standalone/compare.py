@@ -13,19 +13,18 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
-from mlu.utils.misc import get_datetime, reset_seed
-
-from ssl.datasets.get_interface import get_dataset_interface, DatasetInterface
-from ssl.utils.args import post_process_args, check_args, add_common_args
-from ssl.models.checkpoint import CheckPoint
-from ssl.validation.models_comparator import ModelsComparator
+from sslh.dataset.get_interface import DatasetInterface
+from sslh.models.checkpoint import load_state
+from sslh.models.get_model import get_model
+from sslh.utils.args import post_process_args, check_args, add_common_args
+from sslh.utils.misc import main_run
+from sslh.validation.models_comparator import ModelsComparator
 
 from time import time
-from torch.utils.data import DataLoader
-from typing import Optional, Dict, Union
+from typing import Dict, List, Optional
 
 
-TRAIN_NAME = "Comparison"
+RUN_NAME = "Comparison"
 
 
 def create_args() -> Namespace:
@@ -46,35 +45,57 @@ def create_args() -> Namespace:
 	return args
 
 
-def run_compare(args: Namespace, start_date: str, fold_val: Optional[int], interface: DatasetInterface) -> Dict[str, Union[float, int]]:
-	# Build loaders
-	dataset_val = interface.get_dataset_val(args)
-	loader_val = DataLoader(dataset_val, batch_size=args.batch_size_s, shuffle=False, drop_last=False)
+def run_compare(
+	args: Namespace,
+	start_date: str,
+	interface: DatasetInterface,
+	folds_train: Optional[List[int]],
+	folds_val: Optional[List[int]],
+	device: torch.device,
+) -> Dict[str, Dict[str, float]]:
+	"""
+		Run a Comparison test.
+
+		:param args: The argparse arguments fo the run.
+		:param start_date: Date of the start of the run.
+		:param folds_train: The folds used for training the model.
+		:param folds_val: The folds used for validating the model.
+		:param interface: The dataset interface used for training.
+		:param device: The main Pytorch device to use.
+		:return: A dictionary containing the min and max scores on all epochs.
+	"""
+	transform_base = interface.get_base_transform()
+	transform_val = transform_base
+	target_transform = interface.get_target_transform()
+
+	dataset_val = interface.get_dataset_val(args.dataset_path, transform_val, target_transform, folds=folds_val)
+	loader_val = interface.get_loader_val(dataset_val, batch_size=args.batch_size_s, drop_last=False)
 
 	# Prepare model
 	activation = lambda x, dim: x.softmax(dim=dim).clamp(min=2e-30)
 
 	models = []
 	for filepath_model in args.models:
-		model = interface.build_model(args.model, args)
-		CheckPoint.load_best_state(filepath_model, model, None)
+		model = get_model(args.model, args, device=device)
+		load_state(filepath_model, model, None)
 		models.append(model)
 	model_name = models[0].__class__.__name__
 
 	print("Dataset : {:s} (val={:d}).".format(args.dataset_name, len(dataset_val)))
-	print("\nStart {:s} evaluation on {:s} with model \"{:s}\" and {:d} epochs ({:s})...".format(TRAIN_NAME, args.dataset_name, model_name, args.nb_epochs, args.tag))
+	print("\nStart {:s} evaluation on {:s} with model \"{:s}\" and {:d} epochs ({:s})...".format(RUN_NAME, args.dataset_name, model_name, args.nb_epochs, args.tag))
 	start_time = time()
 
 	comparator = ModelsComparator(models, activation, loader_val)
 	comparator.val(0)
 
-	print("End {:s}. (duration = {:.2f})".format(TRAIN_NAME, time() - start_time))
+	print("End {:s}. (duration = {:.2f})".format(RUN_NAME, time() - start_time))
 
 	nb_models = len(args.models)
 	matrix = comparator.get_matrix()
 	total_occ = matrix.sum()
 	model_nums = " ".join(["{:d}".format(i) for i in range(nb_models)])
 
+	print("\nModels: ")
 	for i, model_path in enumerate(args.models):
 		print("{:2d}: {:s}".format(i, model_path))
 	print()
@@ -91,32 +112,7 @@ def run_compare(args: Namespace, start_date: str, fold_val: Optional[int], inter
 
 
 def main():
-	# Initialisation
-	start_time = time()
-	start_date = get_datetime()
-
-	args = create_args()
-	args.start_date = start_date
-	args.train_name = TRAIN_NAME
-
-	reset_seed(args.seed)
-	torch.autograd.set_detect_anomaly(args.debug_mode)
-	torch.cuda.empty_cache()
-
-	print("Start {:s}. (tag: \"{:s}\")".format(TRAIN_NAME, args.tag))
-	print(" - start_date: {:s}".format(start_date))
-
-	# Prepare dataloaders
-	interface = get_dataset_interface(args.dataset_name)
-	args.nb_classes = interface.get_nb_classes()
-
-	# Run
-	run_compare(args, start_date, args.fold_val, interface)
-
-	exec_time = time() - start_time
-	print("")
-	print("Program started at \"{:s}\" and terminated at \"{:s}\".".format(start_date, get_datetime()))
-	print("Total execution time: {:.2f}s".format(exec_time))
+	main_run(create_args, run_compare, RUN_NAME)
 
 
 if __name__ == "__main__":

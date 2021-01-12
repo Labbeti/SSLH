@@ -69,9 +69,13 @@ def main():
 
 			if user_in == "yes":
 				for board_path in to_remove:
+					print(f"Removing {board_path}...")
 					shutil.rmtree(board_path)
+				print("Done.")
 		else:
 			print("No element to remove found.")
+
+	print("Terminated.")
 
 
 if __name__ == "__main__":

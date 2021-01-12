@@ -12,7 +12,7 @@ case $1 in
 		dataset_path="/projets/samova/elabbe/ESC50/";;
 	"GSC" )
 		dataset_path="/projets/samova/elabbe/GSC/";;
-	"GSC10" )
+	"GSC12" )
 		dataset_path="/projets/samova/elabbe/GSC/";;
 	"AUDIOSET" )
 		dataset_path="/projets/samova/CORPORA/AUDIOSET/";;

@@ -1,10 +1,12 @@
-from distutils.core import setup
+
+from setuptools import setup, find_packages
+
 
 setup(
-	name='ssl',
-	version='1.1',
-	packages=['ssl'],
-	url='https://github.com/Labbeti/SSL.git',
+	name='sslh',
+	version='1.2',
+	packages=find_packages(),
+	url='https://github.com/Labbeti/SSLH',
 	license='',
 	author='Etienne Labbé',
 	author_email='etienne.labbe31@gmail.com',

@@ -2,9 +2,9 @@
 import os.path as osp
 
 from argparse import Namespace
-from ssl.datasets.get_interface import get_dataset_interface
-from ssl.datasets.utils import get_classes_idx
 from matplotlib import pyplot as plt
+from mlu.datasets.utils import _get_classes_idx
+from sslh.dataset.get_interface import get_dataset_interface
 
 
 def create_args() -> Namespace:
@@ -20,8 +20,8 @@ def show():
 	args = create_args()
 
 	itf = get_dataset_interface(args.dataset)
-	dataset_train = itf.get_dataset_train(args)
-	cls_idx_all = get_classes_idx(dataset_train, itf.get_nb_classes(), is_one_hot=True)
+	dataset_train = itf.get_dataset_train(args.dataset_path)
+	cls_idx_all = _get_classes_idx(dataset_train, itf.get_nb_classes(), target_one_hot=True)
 	proportions = [len(cls_idx) for cls_idx in cls_idx_all]
 	print(proportions)
 	print(sum(proportions))

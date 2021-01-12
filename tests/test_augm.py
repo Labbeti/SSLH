@@ -6,10 +6,10 @@ from augmentation_utils.signal_augmentations import TimeStretch
 from matplotlib import pyplot as plt
 
 from mlu.transforms.waveform import StretchPadCrop
-from mlu.utils.modules import Squeeze
+from mlu.nn import Squeeze
 
-from ssl.augments.utils import PadUpTo
-from ssl.datasets.gsc import GSCInterface
+from sslh.augments.utils import PadUpTo
+from sslh.dataset.gsc import GSCInterface
 
 from torch import Tensor
 from torch.nn import Sequential

@@ -5,7 +5,6 @@
 .vscode/
 __pycache__/
 build/
-dataset/
 datasets/
 dist/
 old/
@@ -20,9 +19,9 @@ tensorboard/
 *.err
 *.out
 *.torch
-*.ign
 
 # Specific files
 .tmp_sbatch.sh
 .sbatch_*.sh
 .sbatch.sh
+*.ign*

@@ -1,4 +1,4 @@
-# Semi Supervised Learning with holistic methods (SSL)
+# Semi Supervised Learning with Holistic methods (SSLH)
 
 Holistic methods for Semi-Supervised Learning : MixMatch, ReMixMatch and FixMatch for ESC-10, UrbanSound8k and GoogleSpeechCommands datasets.
 
@@ -11,22 +11,21 @@ Holistic methods for Semi-Supervised Learning : MixMatch, ReMixMatch and FixMatc
 - This project has been made for running with GPU but not with CPU.
 - Make sure you have access to the following repositories : 
   - For UrbanSound8k dataset : https://github.com/leocances/UrbanSound8K (created by Léo Cances)
-  - For AudioSet dataset : https://github.com/Labbeti/Torch-AudioSet
   - For utility functions and classes : https://github.com/Labbeti/MLU
 
 #### Download & setup
 - Clone the repository :
 ```bash
-git clone https://github.com/Labbeti/SSL
+git clone https://github.com/Labbeti/SSLH
 ```
 - Create a conda environment with the YAML file (passwords can be required during installation) :
 ```bash
-cd SSL
+cd SSLH
 conda env create -f environment.yml
 ```
 - Activate the new environment :
 ```bash
-conda activate env_ssl
+conda activate env_sslh
 ```
 - Setup the main repository :
 ```bash
@@ -68,12 +67,12 @@ You can find a mixmatch fast code example in a notebook [standalone/mixmatch.ipy
 
 #### Categorical Accuracies (%)
 [comment]: <> (TODO)
-| Dataset | Supervised 10% | Supervised 100% | MixMatch | FixMatch | Supervised MixUp 10% | Supervised MixUp 100% | FixMatch + MixUp |
+| Dataset | Supervised 10% | Supervised 100% | MixMatch | FixMatch | Supervised 10% + MixUp | Supervised 100% + MixUp | FixMatch + MixUp |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ESC10 (cross-validation) | 62.78 | 92.33 | 59.44 | 64.44 | 63.56 | 92.67 | 63.11 |
 | UBS8K (cross-validation) | 67.13 | 76.36 | 73.22 | 69.58 | 68.69 | 77.39 | 75.33 |
 | GSC (35 classes, evaluation) | 89.68 | 94.43 | 92.69 | 83.88 | 92.29 | 96.97 | 93.21 |
-| GSC10 (10 classes + unknown and silence classes, evaluation) | # | # | # | # | # | # | # |
+| GSC12 (10 classes + unknown and silence classes, evaluation) | 93.44 | 97.19 | 95.21 | 83.56 | 93.84 | 97.72 | 90.32 |
 
 ## Code overview 
 - ```sslh``` :

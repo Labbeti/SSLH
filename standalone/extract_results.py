@@ -9,7 +9,7 @@ from argparse import ArgumentParser, Namespace
 from typing import Dict, List, Optional
 
 
-TRAIN_NAME = "Extract"
+RUN_NAME = "Extract"
 NAME_KEY = "Nom"
 
 
@@ -18,14 +18,19 @@ def create_args() -> Namespace:
 
 	parser.add_argument("--tensorboard_roots", "-tr", type=str, nargs="+", default=[osp.join("..", "results", "tensorboard")],
 		help="List of tensorboard roots directories paths. (default: [\"../results/tensorboard/\"])")
+
 	parser.add_argument("--pattern", "-p", type=str, default=".*",
 		help="Pattern for tensorboard paths. (default: \".*\")")
+
 	parser.add_argument("--verbose", "-v", type=int, default=0,
 		help="Verbose level of the program. (default: 0)")
-	parser.add_argument("--no_empty_column", "-ne", action="store_true", default=False,
-		help="Remove columns where all values are empty strings. (default: False)")
+
+	parser.add_argument("--no_empty_column", "-ne", type=lambda x: x.lower() in ["1", "y", "yes", "true"], default=True,
+		help="Remove columns where all values are empty strings. (default: True)")
+
 	parser.add_argument("--search_cross_val", "-cv", action="store_true", default=False,
 		help="Concatenate results of cross-validations. (default: False)")
+
 	parser.add_argument("--sort_keys", "-s", action="store_true", default=False,
 		help="Sort columns by name. (default: False)")
 	
@@ -180,15 +185,17 @@ def main():
 				static_info = {}
 
 			args_dict = args_info["args"]
-			best_dict = best_epoch_info["all_bests"]
+			best_dict = best_epoch_info
+
+			get_if_has = lambda dic, key: dic[key] if key in dic.keys() else ""
 
 			folds_val = get_folds_from_dirpath(match)
 			results = {
 				"Nom": get_train_name_from_dirpath(match),
 				# "Version": "",
 				# "Gain": "",
-				"Best val/acc": "{:.2f}%".format(best_dict["val/acc"]["best_mean"] * 100.0),
-				"Best eval/acc": "{:.2f}%".format(best_dict["eval/acc"]["best_mean"] * 100.0) if "eval/acc" in best_dict.keys() else "",
+				"Best val/acc": "{:.2f}%".format(best_dict["val/acc"]["max"] * 100.0) if "val/acc" in best_dict.keys() else "",
+				"Best eval/acc": "{:.2f}%".format(best_dict["eval/acc"]["max"] * 100.0) if "eval/acc" in best_dict.keys() else "",
 				"alpha": args_dict["alpha"] if "alpha" in args_dict.keys() else "",
 				"su_ratio": "{:.2f}".format(args_dict["supervised_ratio"] * 100.0),
 				"nb_epochs": args_dict["nb_epochs"], "optim": args_dict["optimizer"],
@@ -201,13 +208,13 @@ def main():
 				"seed": args_dict["seed"],
 				"lr": args_dict["learning_rate"] if "learning_rate" in args_dict.keys() else "",
 				"start_date": args_dict["start_date"] if "start_date" in args_dict.keys() else "",
-				"tag": args_dict["tag"] if "tag" in args_dict.keys() else "",
+				"tag": get_if_has(args_dict, "tag"),
 				"folds_val": str(folds_val) if folds_val is not None else "",
-				"augm_none": args.augm_none if hasattr(args, "augm_none") else "",
-				"augm_weak": args.augm_weak if hasattr(args, "augm_weak") else "",
-				"augm_strong": args.augm_strong if hasattr(args, "augm_strong") else "",
-				"duration": static_info["duration"] if "duration" in static_info.keys() else "",
+				"duration": get_if_has(static_info, "duration"),
 			}
+			params = ["augm_none", "augm_weak", "augm_strong", "ema_decay", "weight_decay", "momentum", "use_nesterov"]
+			for key in params:
+				results[key] = get_if_has(args_dict, key)
 
 			global_results.append(results)
 			global_args_dict.append(args_dict)

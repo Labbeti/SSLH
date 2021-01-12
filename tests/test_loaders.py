@@ -1,8 +1,12 @@
-from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 
-from ssl.datasets.utils import get_classes_idx, shuffle_classes_idx, split_classes_idx
-from mlu.utils.zip_cycle import ZipCycle
 from mlu.datasets.wrappers import ZipDataset
+from mlu.utils.zip_cycle import ZipCycle
+
+from mlu.datasets.utils import _get_classes_idx, _shuffle_classes_idx, _split_classes_idx
+
+from torch.utils.data.dataloader import DataLoader
+from torch.utils.data.dataset import Dataset
+from torch.utils.data.sampler import SubsetRandomSampler
 
 
 class DummyDataset(Dataset):
@@ -21,13 +25,13 @@ def test_1():
 	nb_classes = 5
 	ratios = [0.2, 0.8]
 
-	cls_idx_all = get_classes_idx(ds, nb_classes)
-	cls_idx_all = shuffle_classes_idx(cls_idx_all)
-	idx_train = split_classes_idx(cls_idx_all, ratios)
+	cls_idx_all = _get_classes_idx(ds, nb_classes)
+	cls_idx_all = _shuffle_classes_idx(cls_idx_all)
+	idx_train = _split_classes_idx(cls_idx_all, ratios)
 
 	loader_0 = DataLoader(ds, batch_size=2, drop_last=True, sampler=SubsetRandomSampler(idx_train[0]))
 	loader_1 = DataLoader(ds, batch_size=3, drop_last=False, sampler=SubsetRandomSampler(idx_train[1]))
-	loader = ZipCycle([loader_0, loader_1])
+	loader = ZipCycle([loader_0, loader_1], policy="max")
 
 	for items in loader:
 		print("Items: ", items)

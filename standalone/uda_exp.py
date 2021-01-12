@@ -13,38 +13,39 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
-from mlu.datasets.wrappers import NoLabelDataset, ZipDataset
-from mlu.utils.misc import get_datetime, reset_seed
+from mlu.datasets.wrappers import TransformDataset
+from mlu.metrics import CategoricalAccuracy, MetricWrapper, AveragePrecision, RocAuc, DPrime
+from mlu.nn import CrossEntropyWithVectors, Max, JSDivLoss, KLDivLossWithProbabilities
 from mlu.utils.zip_cycle import ZipCycle
 
-from ssl.datasets.get_interface import get_dataset_interface, DatasetInterface
-from ssl.uda.loss import UDALoss
-from ssl.uda.trainer import UDATrainer
-from ssl.uda.trainer_mixup import UDATrainerMixUp
-from ssl.utils.args import post_process_args, check_args, add_common_args
-from ssl.utils.cross_validation import cross_validation
-from ssl.utils.misc import build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix
-from ssl.utils.other_metrics import CategoricalAccuracyOnehot, CrossEntropyMetric, EntropyMetric, MaxMetric
-from ssl.utils.recorder.recorder import Recorder
-from ssl.utils.save import save_results
-from mlu.nn import CrossEntropyWithVectors, JSDivLoss, KLDivLossWithProbabilities
-from ssl.utils.types import str_to_optional_str, str_to_bool
-from ssl.validation.validater import Validater
+from sslh.augments.get_pool import get_transform
+from sslh.dataset.get_interface import DatasetInterface
+from sslh.models.get_model import get_model
+from sslh.uda.loss import UDALoss
+from sslh.uda.trainer import UDATrainer
+from sslh.uda.trainer_mixup import UDATrainerMixUp
+from sslh.utils.args import post_process_args, check_args, add_common_args
+from sslh.utils.misc import (
+	build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix, main_run
+)
+from sslh.utils.recorder.recorder import Recorder
+from sslh.utils.save import save_results
+from sslh.utils.types import str_to_optional_str, str_to_bool
+from sslh.validation.validater import Validater
 
 from time import time
 from torch.nn import MSELoss
-from torch.utils.data import DataLoader, Subset
-from typing import Optional, Dict, Union
+from typing import Dict, List, Optional
 
 
-TRAIN_NAME = "UDAExp"
+RUN_NAME = "UDAExp"
 
 
 def create_args() -> Namespace:
 	parser = ArgumentParser()
 	add_common_args(parser)
 
-	group_uda = parser.add_argument_group(TRAIN_NAME)
+	group_uda = parser.add_argument_group(RUN_NAME)
 	group_uda.add_argument("--lambda_u", type=float, default=1.0,
 		help="MixMatch, FixMatch and ReMixMatch \"lambda_u\" hyperparameter. "
 			 "Coefficient of unsupervised loss component. (default: 1.0)")
@@ -53,17 +54,17 @@ def create_args() -> Namespace:
 
 	group_uda.add_argument("--criterion_s", type=str, default="ce",
 		choices=["mse", "ce", "kl", "js"],
-		help="UDA supervised loss component. (default: ce)")
+		help="UDA supervised loss component. (default: \"ce\")")
 	group_uda.add_argument("--criterion_u", type=str, default="ce",
 		choices=["mse", "ce", "kl", "js"],
-		help="UDA unsupervised loss component. (default: ce)")
+		help="UDA unsupervised loss component. (default: \"ce\")")
 
 	group_uda.add_argument("--threshold", "--threshold_confidence", type=float, default=0.8,
 		help="FixMatch threshold for compute confidence mask in loss. (default: 0.8)")
 	group_uda.add_argument("--temperature", "--sharpen_temperature", type=float, default=0.4,
 		help="MixMatch and ReMixMatch hyperparameter temperature used by sharpening. (default: 0.4)")
 	group_uda.add_argument("--augment", "--augment_type", type=str_to_optional_str, default="strong",
-		help="Augment type used in UDA training. (default: strong)")
+		help="Augment type used in UDA training. (default: \"strong\")")
 
 	group_uda.add_argument("--use_mixup", type=str_to_bool, default=False,
 		help="Apply MixUp between supervised and unsupervised data. (default: False)")
@@ -73,7 +74,7 @@ def create_args() -> Namespace:
 	group_uda.add_argument("--augm_none", type=str_to_optional_str, default=None,
 		help="Augment pool for default training dataset. (default: None)")
 	group_uda.add_argument("--augm_strong", type=str_to_optional_str, default="strong",
-		help="Augment pool for strong augmentation to use. (default: strong)")
+		help="Augment pool for strong augmentation to use. (default: \"strong\")")
 
 	args = parser.parse_args()
 	args = post_process_args(args)
@@ -82,42 +83,67 @@ def create_args() -> Namespace:
 	return args
 
 
-def run_uda_exp(args: Namespace, start_date: str, fold_val: Optional[int], interface: DatasetInterface) -> Dict[str, Union[float, int]]:
-	# Build loaders
-	if interface.get_nb_folds() is None:
-		folds_train, folds_val = None, None
-	else:
-		if fold_val is None:
-			fold_val = interface.get_nb_folds()
-		folds_train = list(range(1, interface.get_nb_folds() + 1))
-		folds_train.remove(fold_val)
-		folds_val = [fold_val]
+def run_uda_exp(
+	args: Namespace,
+	start_date: str,
+	interface: DatasetInterface,
+	folds_train: Optional[List[int]],
+	folds_val: Optional[List[int]],
+	device: torch.device,
+) -> Dict[str, Dict[str, float]]:
+	"""
+		Run a UDA training.
 
-	dataset_train = interface.get_dataset_train(args, folds_train)
-	dataset_train_augm = interface.get_dataset_train_augm_strong(args, folds_train)
-	dataset_val = interface.get_dataset_val(args, folds_val)
-	dataset_eval = interface.get_dataset_eval(args, None)
+		:param args: The argparse arguments fo the run.
+		:param start_date: Date of the start of the run.
+		:param folds_train: The folds used for training the model.
+		:param folds_val: The folds used for validating the model.
+		:param interface: The dataset interface used for training.
+		:param device: The main Pytorch device to use.
+		:return: A dictionary containing the min and max scores on all epochs.
+	"""
 
-	indexes_s, indexes_u = interface.generate_indexes_for_split(dataset_train, [args.supervised_ratio, 1.0 - args.supervised_ratio])
-	dataset_train_s = Subset(dataset_train, indexes_s)
-	dataset_train_u = Subset(dataset_train, indexes_u)
-	dataset_train_u_augm_strong = Subset(dataset_train_augm, indexes_u)
+	# Builds augmentations
+	data_type = interface.get_data_type()
+	transform_base = interface.get_base_transform()
+	transform_none = get_transform(args.augm_none, args, data_type, transform_base)
+	transform_strong = get_transform(args.augm_strong, args, data_type, transform_base)
+	transform_val = transform_base
+	target_transform = interface.get_target_transform()
 
-	dataset_train_u = NoLabelDataset(dataset_train_u)
-	dataset_train_u_augm_strong = NoLabelDataset(dataset_train_u_augm_strong)
+	dataset_train_raw = interface.get_dataset_train(args.dataset_path, folds=folds_train)
+	dataset_val = interface.get_dataset_val(args.dataset_path, transform_val, target_transform, folds=folds_val)
+	dataset_eval = interface.get_dataset_eval(args.dataset_path, transform_val, target_transform, folds=folds_val)
 
-	dataset_train_u_augm_none_strong = ZipDataset([dataset_train_u, dataset_train_u_augm_strong])
+	def transform_none_label(item: tuple) -> tuple:
+		data, label = item
+		return transform_none(data), target_transform(label)
 
-	loader_train_s = DataLoader(
-		dataset=dataset_train_s, batch_size=args.batch_size_s, shuffle=True, num_workers=2, drop_last=True)
-	loader_train_u_none_augm = DataLoader(
-		dataset=dataset_train_u_augm_none_strong, batch_size=args.batch_size_u, shuffle=True, num_workers=6, drop_last=True)
+	def transform_strong_no_label(item: tuple) -> tuple:
+		data, label = item
+		return data, transform_strong(data)
 
-	loader_train = ZipCycle([loader_train_s, loader_train_u_none_augm])
-	loader_val = DataLoader(dataset_val, batch_size=args.batch_size_s, shuffle=False, drop_last=False)
+	dataset_train_augm_none = TransformDataset(
+		dataset_train_raw, transform_none_label, index=None,
+	)
+	dataset_train_strong_no_label = TransformDataset(
+		dataset_train_raw, transform_strong_no_label, index=None,
+	)
+
+	loader_train_s, loader_train_u = interface.get_loaders_split(
+		labeled_dataset=dataset_train_raw,
+		ratios=[args.supervised_ratio, 1.0 - args.supervised_ratio],
+		datasets=[dataset_train_augm_none, dataset_train_strong_no_label],
+		batch_sizes=[args.batch_size_s, args.batch_size_u],
+		drop_last_list=[True, True],
+		num_workers_list=[2, 6],
+		target_transformed=False,
+	)
+	loader_train = ZipCycle([loader_train_s, loader_train_u], policy=args.zip_cycle_policy)
+	loader_val = interface.get_loader_val(dataset_val, batch_size=args.batch_size_s, shuffle=False, drop_last=False)
 
 	# Prepare model
-	model = interface.build_model(args.model, args)
+	model =get_model(args.model, args, device=device)
 	model_name = model.__class__.__name__
 	optim = build_optimizer(args, model)
 	activation = lambda x, dim: x.softmax(dim=dim).clamp(min=2e-30)
@@ -135,18 +161,27 @@ def run_uda_exp(args: Namespace, start_date: str, fold_val: Optional[int], inter
 	sched = build_scheduler(args, optim)
 
 	# Prepare metrics
-	main_metric_name = "val/acc"
-	metrics_train_s = {"acc_s": CategoricalAccuracyOnehot(dim=1)}
-	metrics_train_u = {"acc_u": CategoricalAccuracyOnehot(dim=1)}
-	metrics_val = {
-		"acc": CategoricalAccuracyOnehot(dim=1),
-		"ce": CrossEntropyMetric(dim=1),
-		"entropy": EntropyMetric(dim=1),
-		"max": MaxMetric(dim=1),
-	}
+	target_type = interface.get_target_type()
+	if target_type == "monolabel":
+		main_metric_name = "val/acc"
+
+		metrics_train_s = {"train/acc_s": CategoricalAccuracy(dim=1)}
+		metrics_train_u = {"train/acc_u": CategoricalAccuracy(dim=1)}
+		metrics_val = {
+			"val/acc": CategoricalAccuracy(dim=1),
+			"val/ce": MetricWrapper(CrossEntropyWithVectors(dim=1)),
+			"val/max": MetricWrapper(Max(dim=1), use_target=False, reduce_fn=torch.mean),
+		}
+	elif target_type == "multilabel":
+		main_metric_name = "val/mAP"
+		metrics_train_s = {"train/mAP_s": AveragePrecision(), "train/mAUC_s": RocAuc(), "train/dPrime_s": DPrime()}
+		metrics_train_u = {"train/mAP_u": AveragePrecision(), "train/mAUC_u": RocAuc(), "train/dPrime_u": DPrime()}
+		metrics_val = {"val/mAP": AveragePrecision(), "val/mAUC": RocAuc(), "val/dPrime": DPrime()}
+	else:
+		raise RuntimeError(f"Unknown target type \"{target_type}\".")
 
 	# Prepare objects for saving data
-	prefix = get_prefix(args, folds_val, interface, start_date, model_name, TRAIN_NAME)
+	prefix = get_prefix(args, folds_val, interface, start_date, model_name, RUN_NAME)
 	writer, dirpath_writer = build_tensorboard_writer(args, prefix)
 	recorder = Recorder(writer)
 	checkpoint = build_checkpoint(args, dirpath_writer, model, optim)
@@ -163,48 +198,64 @@ def run_uda_exp(args: Namespace, start_date: str, fold_val: Optional[int], inter
 	else:
 		trainer = UDATrainer(
 			model, activation, optim, loader_train, metrics_train_s, metrics_train_u, recorder, criterion,
+			device=device,
 			threshold=args.threshold,
 			lambda_u=args.lambda_u,
 			temperature=args.temperature,
 		)
-	validator = Validater(model, activation, loader_val, metrics_val, recorder, checkpoint=checkpoint, checkpoint_metric=main_metric_name)
+	validater = Validater(
+		model, activation, loader_val, metrics_val, recorder,
+		device=device,
+		checkpoint=checkpoint,
+		checkpoint_metric=main_metric_name
+	)
 
 	if sched is not None:
-		validator.add_callback_on_end(sched)
+		validater.add_callback_on_end(sched)
 
-	print("Dataset : {:s} (train={:d} (supervised={:d}, unsupervised={:d}), val={:d}, eval={:s}).".format(
+	trainer.add_callback_on_end(recorder)
+	validater.add_callback_on_end(recorder)
+
+	print("Dataset : {:s} (train={:d}, val={:d}, eval={:s}).".format(
 		args.dataset_name,
-		len(dataset_train),
-		len(dataset_train_s),
-		len(dataset_train_u),
+		len(dataset_train_augm_none),
 		len(dataset_val),
 		str(len(dataset_eval)) if dataset_eval is not None else "None"
 	))
-	print("\nStart {:s} training on {:s} with model \"{:s}\" and {:d} epochs ({:s})...".format(TRAIN_NAME, args.dataset_name, model_name, args.nb_epochs, args.tag))
+	print("\nStart {:s} training on {:s} with model \"{:s}\" and {:d} epochs ({:s})...".format(RUN_NAME, args.dataset_name, model_name, args.nb_epochs, args.tag))
 	start_time = time()
 
 	for epoch in range(args.nb_epochs):
 		trainer.train(epoch)
-		validator.val(epoch)
+		validater.val(epoch)
+		print()
 
-	print("\nEnd {:s} training. (duration = {:.2f})".format(TRAIN_NAME, time() - start_time))
+	print("\nEnd {:s} training. (duration = {:.2f})".format(RUN_NAME, time() - start_time))
 
 	if dataset_eval is not None and checkpoint is not None and checkpoint.is_saved():
-		recorder.deactivate_auto_storage()
+		recorder.set_storage(write_std=False, write_min_mean=False, write_max_mean=False)
 		checkpoint.load_best_state(model, None)
-		loader_eval = DataLoader(dataset_eval, batch_size=args.batch_size_s, shuffle=False, drop_last=False)
-		validator = Validater(model, activation, loader_eval, metrics_val, recorder, name="eval")
-		validator.val(0)
+		loader_eval = interface.get_loader_val(dataset_eval, batch_size=args.batch_size_s, drop_last=False, num_workers=0)
+		validater = Validater(model, activation, loader_eval, metrics_val, recorder, name="eval")
+		validater.val(0)
 
 	# Save results
-	save_results(dirpath_writer, args, recorder, interface.get_transforms(args), main_metric_name, start_date, folds_val)
+	save_results(dirpath_writer, args, recorder, {}, main_metric_name, start_date, folds_val, start_time)
 
-	if not recorder.is_empty():
-		best = recorder.get_best_epoch(main_metric_name)
-		print("Metric : \"{:s}\"".format(main_metric_name))
-		print("Best epoch : {:d}".format(best["best_epoch"]))
-		print("Best mean : {:f}".format(best["best_mean"]))
-		print("Best std : {:f}".format(best["best_std"]))
+	if main_metric_name in recorder.get_all_names():
+		idx_min, min_, idx_max, max_ = recorder.get_min_max(main_metric_name)
+		print(f"Metric : \"{main_metric_name}\"")
+		print(f"Max mean : {max_} at epoch {idx_max}")
+		print(f"Min mean : {min_} at epoch {idx_min}")
+
+		best = {
+			main_metric_name: {
+				"max": max_,
+				"idx_max": idx_max,
+				"min": min_,
+				"idx_min": idx_min,
+			}
+		}
 	else:
 		best = {}
 
@@ -212,35 +263,7 @@ def run_uda_exp(args: Namespace, start_date: str, fold_val: Optional[int], inter
 
 
 def main():
-	# Initialisation
-	start_time = time()
-	start_date = get_datetime()
-
-	args = create_args()
-	args.start_date = start_date
-	args.train_name = TRAIN_NAME
-
-	reset_seed(args.seed)
-	torch.autograd.set_detect_anomaly(args.debug_mode)
-	torch.cuda.empty_cache()
-
-	print("Start {:s}. (tag: \"{:s}\")".format(TRAIN_NAME, args.tag))
-	print(" - start_date: {:s}".format(start_date))
-
-	# Prepare dataloaders
-	interface = get_dataset_interface(args.dataset_name)
-	args.nb_classes = interface.get_nb_classes()
-
-	# Run
-	if args.cross_validation:
-		cross_validation(run_uda_exp, args, start_date, interface, TRAIN_NAME)
-	else:
-		run_uda_exp(args, start_date, args.fold_val, interface)
-
-	exec_time = time() - start_time
-	print("")
-	print("Program started at \"{:s}\" and terminated at \"{:s}\".".format(start_date, get_datetime()))
-	print("Total execution time: {:.2f}s".format(exec_time))
+	main_run(create_args, run_uda_exp, RUN_NAME)
 
 
 if __name__ == "__main__":

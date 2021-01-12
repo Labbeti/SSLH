@@ -1,5 +1,5 @@
 from unittest import main, TestCase
-from ssl.datasets.utils import split_classes_idx
+from mlu.datasets.utils import _split_classes_idx
 
 
 class DatasetIdxTest(TestCase):
