@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='sslh',
-	version='1.2',
+	version='1.2.1',
 	packages=find_packages(),
 	url='https://github.com/Labbeti/SSLH',
 	license='',
