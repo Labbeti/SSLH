@@ -5,7 +5,7 @@ import torch
 from argparse import ArgumentParser
 from matplotlib import pyplot as plt
 
-from sslh.dataset.get_interface import get_dataset_interface
+from sslh.datasets.get_builder import get_dataset_builder
 from sslh.utils.adversaries.fgsm import FGSM
 from sslh.utils.adversaries.iterative_fgsm import IterativeFGSM
 from sslh.models.get_model import load_model_from_file
@@ -14,10 +14,10 @@ from mlu.nn import CrossEntropyWithVectors
 
 class TestAdv:
 	def test_gradient_attack(self):
-		interface = get_dataset_interface("ESC10")
+		builder = get_dataset_builder("ESC10")
 
 		parser = ArgumentParser()
-		parser.add_argument("--dataset_path", type=str, default=osp.join("..", "dataset"))
+		parser.add_argument("--dataset_path", type=str, default=osp.join("..", "datasets"))
 		parser.add_argument("--nb_classes_self_supervised", type=int, default=4)
 		parser.add_argument("--label_smoothing_value", type=float, default=None)
 		parser.add_argument("--augm_none", type=str, default=None)
@@ -35,14 +35,14 @@ class TestAdv:
 		))
 
 		args = parser.parse_args()
-		args.nb_classes = interface.get_nb_classes()
+		args.nb_classes = builder.get_nb_classes()
 
 		model = load_model_from_file("WideResNet28RotSpec", args, args.model)
 
 		activation = torch.softmax
 		criterion = CrossEntropyWithVectors()
 
-		dataset = interface.get_dataset_train(args)
+		dataset = builder.get_dataset_train(args)
 		original_spec, label = dataset[20]
 
 		device = torch.device("cuda")

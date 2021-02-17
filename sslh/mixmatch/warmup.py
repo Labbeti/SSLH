@@ -62,5 +62,5 @@ class WarmUp:
 	def _check_attributes(self):
 		if self._obj is not None and not hasattr(self._obj, self._attr_name):
 			raise RuntimeError(
-				"Use warmup on attribute \"{:s}\" but the object \"{:s}\" do not contains this attribute.".format(
+				"Use warmup on attribute '{:s}' but the object '{:s}' do not contains this attribute.".format(
 					self._attr_name, self._obj.__class__.__name__))

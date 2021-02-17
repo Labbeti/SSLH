@@ -1,5 +1,4 @@
 # CODE IMPORTED FROM https://github.com/kuangliu/pytorch-cifar/blob/master/models/resnet.py
-# Note: it has been modified for compute rotation prediction for ReMixMatch.
 
 """
 	ResNet in PyTorch.
@@ -13,7 +12,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from typing import List
+from torch.nn import Module
+from typing import List, Type
 
 
 class BasicBlock(nn.Module):
@@ -75,7 +75,7 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-	def __init__(self, block, num_blocks: List[int], num_classes: int = 10):
+	def __init__(self, block: Type[Module], num_blocks: List[int], num_classes: int = 10):
 		super(ResNet, self).__init__()
 		self.in_planes = 64
 
@@ -88,7 +88,7 @@ class ResNet(nn.Module):
 		self.linear = nn.Linear(512 * block.expansion, num_classes)
 
 	def _make_layer(self, block, planes, num_blocks, stride):
-		strides = [stride] + [1]*(num_blocks-1)
+		strides = [stride] + [1] * (num_blocks - 1)
 		layers = []
 		for stride in strides:
 			layers.append(block(self.in_planes, planes, stride))
@@ -152,5 +152,3 @@ def test():
 	net = ResNet18()
 	y = net(torch.randn(1, 3, 32, 32))
 	print(y.size())
-
-# test()

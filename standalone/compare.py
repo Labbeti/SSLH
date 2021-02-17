@@ -13,11 +13,14 @@ import torch
 
 from argparse import ArgumentParser, Namespace
 
-from sslh.dataset.get_interface import DatasetInterface
+from mlu.utils.misc import get_nb_parameters
+
+from sslh.augments.get_pool import get_transform
+from sslh.datasets.get_builder import DatasetBuilder
 from sslh.models.checkpoint import load_state
 from sslh.models.get_model import get_model
 from sslh.utils.args import post_process_args, check_args, add_common_args
-from sslh.utils.misc import main_run
+from sslh.utils.misc import main_run, get_activation
 from sslh.validation.models_comparator import ModelsComparator
 
 from time import time
@@ -29,9 +32,11 @@ RUN_NAME = "Comparison"
 
 def create_args() -> Namespace:
 	parser = ArgumentParser()
-	add_common_args(parser)
+	parser = add_common_args(parser)
 
-	parser.add_argument("--models", type=str, nargs="+", default=[], required=True,
+	group_comp = parser.add_argument_group(f"{RUN_NAME} args")
+
+	group_comp.add_argument("--models", type=str, nargs="+", default=[], required=True,
 		help="Path to the checkpoint model saved. (default: [])")
 
 	args = parser.parse_args()
@@ -40,7 +45,7 @@ def create_args() -> Namespace:
 
 	for filepath_model in args.models:
 		if not osp.isfile(filepath_model):
-			raise RuntimeError("Invalid filepath \"{:s}\".".format(filepath_model))
+			raise RuntimeError("Invalid filepath '{:s}'.".format(filepath_model))
 
 	return args
 
@@ -48,7 +53,8 @@ def create_args() -> Namespace:
 def run_compare(
 	args: Namespace,
 	start_date: str,
-	interface: DatasetInterface,
+	git_hash: str,
+	builder: DatasetBuilder,
 	folds_train: Optional[List[int]],
 	folds_val: Optional[List[int]],
 	device: torch.device,
@@ -58,34 +64,39 @@ def run_compare(
 
 		:param args: The argparse arguments fo the run.
 		:param start_date: Date of the start of the run.
+		:param git_hash: The current git hash of the repository.
 		:param folds_train: The folds used for training the model.
 		:param folds_val: The folds used for validating the model.
-		:param interface: The dataset interface used for training.
+		:param builder: The dataset builder used for training.
 		:param device: The main Pytorch device to use.
 		:return: A dictionary containing the min and max scores on all epochs.
 	"""
-	transform_base = interface.get_base_transform()
-	transform_val = transform_base
-	target_transform = interface.get_target_transform()
+	transform_val = get_transform("identity", args, builder)
+	target_transform = builder.get_target_transform()
 
-	dataset_val = interface.get_dataset_val(args.dataset_path, transform_val, target_transform, folds=folds_val)
-	loader_val = interface.get_loader_val(dataset_val, batch_size=args.batch_size_s, drop_last=False)
+	dataset_val = builder.get_dataset_val(args.dataset_path, transform_val, target_transform, folds=folds_val)
+	loader_val = builder.get_loader_val(dataset_val, args.batch_size_s)
 
 	# Prepare model
-	activation = lambda x, dim: x.softmax(dim=dim).clamp(min=2e-30)
+	activation = get_activation(args.activation, clamp=True, clamp_min=2e-30)
 
 	models = []
 	for filepath_model in args.models:
-		model = get_model(args.model, args, device=device)
+		model = get_model(args.model, args, builder, device)
+		if args.nb_gpu > 1:
+			model = DataParallel(model)
 		load_state(filepath_model, model, None)
 		models.append(model)
-	model_name = models[0].__class__.__name__
 
 	print("Dataset : {:s} (val={:d}).".format(args.dataset_name, len(dataset_val)))
-	print("\nStart {:s} evaluation on {:s} with model \"{:s}\" and {:d} epochs ({:s})...".format(RUN_NAME, args.dataset_name, model_name, args.nb_epochs, args.tag))
+	print("Models: ")
+	for model in models:
+		print(f"{model.__class__.__name__} : {get_nb_trainable_parameters(model)}")
+
+	print("\nStart {:s} training with {:d} epochs (tag: '{:s}')...".format(RUN_NAME, args.nb_epochs, args.tag))
 	start_time = time()
 
-	comparator = ModelsComparator(models, activation, loader_val)
+	comparator = ModelsComparator(models, activation, loader_val, {})
 	comparator.val(0)
 
 	print("End {:s}. (duration = {:.2f})".format(RUN_NAME, time() - start_time))

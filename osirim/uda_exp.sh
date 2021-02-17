@@ -6,7 +6,7 @@ ds_name=`./get_ds.sh $@`
 logdir=`./get_board_path.sh $ds_name`
 dataset_path=`./get_ds_path.sh $ds_name`
 
-path_script="$HOME/root/SSLH/standalone/$run.py"
+path_script="$HOME/root_sslh/SSLH/standalone/$run.py"
 path_torch="/logiciels/containerCollections/CUDA10/pytorch.sif"
 path_py=`./get_py_path.sh`
 

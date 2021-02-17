@@ -6,260 +6,321 @@ import os.path as osp
 import re
 
 from argparse import ArgumentParser, Namespace
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
-RUN_NAME = "Extract"
-NAME_KEY = "Nom"
+CROSS_VAL_COMMON_KEYS = [
+	"run_name", "start_date", "tag", "dataset", "model", "seed", "supervised_ratio", "nb_epochs", "git_hash",
+	"cross_val_tag",
+]
+DEFAULT_INCLUDE_LIST = [
+	"^run_name$", "^start_date$", "^tag$", "^duration$",
+]
+
+FOLDS_VAL_KEY = "current_folds_val"
+DURATION_KEY = "duration"
 
 
 def create_args() -> Namespace:
 	parser = ArgumentParser()
 
-	parser.add_argument("--tensorboard_roots", "-tr", type=str, nargs="+", default=[osp.join("..", "results", "tensorboard")],
-		help="List of tensorboard roots directories paths. (default: [\"../results/tensorboard/\"])")
+	parser.add_argument("--roots", "--tensorboard_roots", "-tr", type=str, nargs="*",
+		default=[osp.join("..", "results", "tensorboard")],
+		help="List of tensorboard roots directories paths. (default: ['../results/tensorboard/'])")
 
 	parser.add_argument("--pattern", "-p", type=str, default=".*",
-		help="Pattern for tensorboard paths. (default: \".*\")")
+		help="Pattern for tensorboard paths. (default: '.*')")
+
+	parser.add_argument("--exclude_list", "-ex", type=str, nargs="*", default=[],
+		help="Exclude columns list. (default: [])")
+
+	parser.add_argument("--include_list", "-in", type=str, nargs="*", default=[],
+		help="Add the columns matching with at least one element of this list. (default: [])")
+
+	parser.add_argument("--default_include_list", "-in_def", type=str, nargs="*", default=DEFAULT_INCLUDE_LIST,
+		help="Another include list. Contains the default values printed without metrics. (default: {})".format(
+			str(DEFAULT_INCLUDE_LIST)))
+
+	parser.add_argument("--metrics", type=str, nargs="*", default=["val/acc", "eval/acc"],
+		help="The name of the main metric to use for compare results. (default: ['val/acc', 'eval/acc'])")
+
+	parser.add_argument("--criterions", type=str, nargs="*", default=["max"],
+		help="The name of the criterion for the main metric. (default ['max'])")
+
+	parser.add_argument("--cross_val", "-cv", action="store_true", default=False,
+		help="Concatenate cross-validation results.")
+
+	parser.add_argument("--result_index", "-ri", action="store_true", default=False,
+		help="Print the index of the results at each line beginning.")
 
 	parser.add_argument("--verbose", "-v", type=int, default=0,
 		help="Verbose level of the program. (default: 0)")
 
-	parser.add_argument("--no_empty_column", "-ne", type=lambda x: x.lower() in ["1", "y", "yes", "true"], default=True,
-		help="Remove columns where all values are empty strings. (default: True)")
-
-	parser.add_argument("--search_cross_val", "-cv", action="store_true", default=False,
-		help="Concatenate results of cross-validations. (default: False)")
-
-	parser.add_argument("--sort_keys", "-s", action="store_true", default=False,
-		help="Sort columns by name. (default: False)")
-	
-	parser.add_argument("--exclude_list", "-ex", type=str, nargs="+", default=[],
-		help="Exclude columns list. (default: [])")
-	parser.add_argument("--include_list", "-in", type=str, nargs="+", default=[],
-		help="If contains at least 1 element, will only print the Name and the elements of this list. (default: [])")
+	str_to_optional_str = lambda x: None if str(x).lower() == "none" else str(x)
+	parser.add_argument("--float_format", "-ff", type=str_to_optional_str, default="{:.5f}",
+		help="The format for floating types. (default: '{:.5f}')")
 
 	args = parser.parse_args()
 
+	if len(args.criterions) == 1:
+		args.criterions = [args.criterions[0]] * len(args.metrics)
+
+	if len(args.criterions) != len(args.metrics):
+		raise RuntimeError("Criterions must have the same size than metrics or must contains 1 criterion that will be "
+			"used for all metrics.")
 	return args
-
-
-def get_train_name_from_dirpath(dirpath: str) -> str:
-	dirname = osp.basename(dirpath)
-	train_names = [
-		"FixMatch", "FixMatchExp", "MixMatch", "MixMatchExp", "ReMixMatch", "SupervisedAugment", "Supervised", "SupervisedExp", "UDA", "UDAExp"
-	]
-	for name in train_names:
-		name_with_underscores = f"_{name}_"
-		if name_with_underscores in dirname:
-			return name
-
-	raise RuntimeError(f"Cannot find train name in dirname {dirname}.")
-
-
-def get_group(results: dict, args_dict: dict, groups: List[list]) -> Optional[int]:
-	for group_idx, group in enumerate(groups):
-		_idx, group_res, group_args, _best_dict = group[0]
-		if args_dict == group_args:
-			return group_idx
-	return None
-
-
-def get_folds_from_dirpath(dirpath: str) -> Optional[List[int]]:
-	dirname = osp.basename(dirpath)
-	pattern_fold = r"\[(?P<folds>[\d|,| ]*)\]"
-	match = re.search(pattern_fold, dirname)
-
-	if match is None:
-		return None
-	else:
-		folds = match["folds"]
-		folds = folds.replace(" ", "")
-		folds = folds.split(",")
-		folds = [int(fold) for fold in folds]
-		return folds
-
-
-def get_keys(global_results: list) -> List[str]:
-	keys = []
-	for results in global_results:
-		for key in results.keys():
-			if key not in keys:
-				keys.append(key)
-	return keys
-
-
-def get_key_formats(keys: List[str], global_results: list, args: Namespace) -> Dict[str, str]:
-	max_lengths = {
-		key: max([len(str(results[key])) if key in results.keys() else 0 for results in global_results])
-		for key in keys
-	}
-
-	to_remove = []
-	for key, max_len in max_lengths.items():
-		if key != NAME_KEY and (
-			(args.no_empty_column and max_len == 0) or
-			(len(args.exclude_list) > 0 and any([re.search(exclude, key) for exclude in args.exclude_list])) or
-			(len(args.include_list) > 0 and all([not re.search(include, key) for include in args.include_list]))
-		):
-			to_remove.append(key)
-
-	for key in to_remove:
-		max_lengths.pop(key)
-		keys.remove(key)
-		for results in global_results:
-			if key in results.keys():
-				results.pop(key)
-
-	max_lengths = {key: max(max_len, len(key)) for key, max_len in max_lengths.items()}
-	key_formats = {key: "{{:{:d}s}}".format(max_len) for key, max_len in max_lengths.items()}
-	return key_formats
-
-
-def print_global_results(global_results: list, args: Namespace):
-	if len(global_results) == 0:
-		print("No results found.")
-		return
-
-	lambda_sort = \
-		lambda results_: "{:s}_{:s}".format(results_[NAME_KEY], results_["tag"]) if "tag" in results_.keys() else results_[NAME_KEY]
-
-	keys = get_keys(global_results)
-	key_formats = get_key_formats(keys, global_results, args)
-
-	if args.sort_keys:
-		keys.sort()
-
-	# Print columns names
-	end = " | "
-	for key in keys:
-		print(key_formats[key].format(str(key)), end=end)
-	print()
-
-	# Print values
-	for results in sorted(global_results, key=lambda_sort):
-		for key in keys:
-			val = str(results[key]) if key in results.keys() else ""
-			print(key_formats[key].format(val), end=end)
-		print()
 
 
 def main():
 	args = create_args()
 
-	for tensorboard_root in args.tensorboard_roots:
-		objects = os.listdir(tensorboard_root)
-		objects = [osp.join(tensorboard_root, name) for name in objects]
-		objects = [path for path in objects if osp.isdir(path)]
+	for root in args.roots:
+		if not osp.isdir(root):
+			raise RuntimeError(f"Unknown directory '{root}'.")
 
-		matches = [path for path in objects if re.search(args.pattern, path) is not None]
-		# date_pattern = r"(?P<date>\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2})"
+		results_paths = get_results_paths(root, args)
+		results = []
+		param_names = []
 
-		# Read info from args and best epoch files
-		global_results = []
-		global_args_dict = []
-		global_best_dict = []
-		global_dirpaths = []
+		for run_path in results_paths:
+			objects = get_sub_paths(run_path)
+			filepaths = [path for path in sorted(objects) if osp.isfile(path)]
 
-		for match in matches:
-			if args.verbose >= 1:
-				print(f"Match: \"{match}\" : ")
-			args_filepath = osp.join(match, "args.json")
-			best_epoch_filepath = osp.join(match, "best_epoch.json")
-			static_filepath = osp.join(match, "static.json")
+			if args.verbose:
+				print(f"Check results folder '{run_path}'...")
 
-			if not osp.isfile(args_filepath) or not osp.isfile(best_epoch_filepath):
-				if args.verbose >= 1:
-					print(f"Warn: Ignore match \"{match}\" because cannot find args or best epoch JSON file(s).")
+			run_content = {}
+			for path in filepaths:
+				if path.endswith(".json"):
+					with open(path, "r") as file:
+						content = json.load(file)
+						run_content.update(content)
+
+			run_results = {}
+			for key in ("args", "info", "other"):
+				if key in run_content.keys():
+					intersection = list(set(run_results.keys()).intersection(run_content[key].keys()))
+					if len(intersection) != 0:
+						print(f"WARNING: Found common(s) key(s) between args, info and other json files. "
+							f"('{intersection}' is not empty)")
+					run_results.update(run_content[key])
+
+			if "bests" in run_content.keys():
+				if len(args.metrics) != len(args.criterions) and len(args.criterions) != 1:
+					raise RuntimeError("Mismatch between metrics and criterions sizes.")
+
+				for metric_name, criterion in zip(args.metrics, args.criterions):
+					if metric_name in run_content["bests"]:
+						metric_value = run_content["bests"][metric_name][criterion]
+						run_results[metric_name] = metric_value
+
+			for name in run_results.keys():
+				if name not in param_names:
+					param_names.append(name)
+
+			# If cross-val mode is True, we only add runs with cross-validation activated.
+			if not args.cross_val or ("cross_validation" in run_results.keys() and run_results["cross_validation"]):
+				results.append(run_results)
+
+		if not args.cross_val:
+			param_names = [name for name in param_names if pass_filters(name, args)]
+			matrix = build_matrix_values(results, param_names, args)
+		else:
+			matrix, param_names = build_matrix_cross_val(results, param_names, args)
+
+		if len(matrix) == 0:
+			print(f"No matching results found in root directory '{root}'.")
+			continue
+
+		# Format columns
+		col_to_remove = set()
+		for col_idx, name in enumerate(param_names):
+			if not pass_filters(name, args):
+				col_to_remove.add(col_idx)
 				continue
 
-			with open(args_filepath, "r") as file:
-				args_info = json.load(file)
-			with open(best_epoch_filepath, "r") as file:
-				best_epoch_info = json.load(file)
+			column = get_column(matrix, col_idx)
+			content_max_len = max((len(value) for value in column))
+			if content_max_len == 0:
+				col_to_remove.add(col_idx)
+				continue
+			max_len = max(content_max_len, len(name))
 
-			if osp.isfile(static_filepath):
-				with open(static_filepath, "r") as file:
-					static_info = json.load(file)
-			else:
-				static_info = {}
+			col_format = "{{:{:d}s}}".format(max_len)
+			for row_idx in range(len(matrix)):
+				matrix[row_idx][col_idx] = col_format.format(matrix[row_idx][col_idx])
+			param_names[col_idx] = col_format.format(name)
 
-			args_dict = args_info["args"]
-			best_dict = best_epoch_info
+		# Remove columns (reverse index sort because index will not be valid in deleted in another order.
+		for col_idx in sorted(col_to_remove, reverse=True):
+			param_names.pop(col_idx)
+			for line in matrix:
+				line.pop(col_idx)
+				assert len(param_names) == len(line)
 
-			get_if_has = lambda dic, key: dic[key] if key in dic.keys() else ""
+		print_matrix(param_names, matrix, args)
 
-			folds_val = get_folds_from_dirpath(match)
-			results = {
-				"Nom": get_train_name_from_dirpath(match),
-				# "Version": "",
-				# "Gain": "",
-				"Best val/acc": "{:.2f}%".format(best_dict["val/acc"]["max"] * 100.0) if "val/acc" in best_dict.keys() else "",
-				"Best eval/acc": "{:.2f}%".format(best_dict["eval/acc"]["max"] * 100.0) if "eval/acc" in best_dict.keys() else "",
-				"alpha": args_dict["alpha"] if "alpha" in args_dict.keys() else "",
-				"su_ratio": "{:.2f}".format(args_dict["supervised_ratio"] * 100.0),
-				"nb_epochs": args_dict["nb_epochs"], "optim": args_dict["optimizer"],
-				"sched": args_dict["scheduler"] if args_dict["scheduler"] is not None else "",
-				"nb_augms": args_dict["nb_augms"] if "nb_augms" in args_dict.keys() else "",
-				"threshold": args_dict["threshold"] if "threshold" in args_dict.keys() else "",
-				"bsize_s": args_dict["batch_size_s"],
-				"bsize_u": args_dict["batch_size_u"] if "batch_size_u" in args_dict.keys() else "",
-				"temperature": args_dict["temperature"] if "temperature" in args_dict.keys() else "",
-				"seed": args_dict["seed"],
-				"lr": args_dict["learning_rate"] if "learning_rate" in args_dict.keys() else "",
-				"start_date": args_dict["start_date"] if "start_date" in args_dict.keys() else "",
-				"tag": get_if_has(args_dict, "tag"),
-				"folds_val": str(folds_val) if folds_val is not None else "",
-				"duration": get_if_has(static_info, "duration"),
-			}
-			params = ["augm_none", "augm_weak", "augm_strong", "ema_decay", "weight_decay", "momentum", "use_nesterov"]
-			for key in params:
-				results[key] = get_if_has(args_dict, key)
 
-			global_results.append(results)
-			global_args_dict.append(args_dict)
-			global_best_dict.append(best_dict)
-			global_dirpaths.append(match)
+def get_sub_paths(root: str) -> List[str]:
+	objects = os.listdir(root)
+	objects = [osp.join(root, name) for name in objects]
+	return objects
 
-		if not args.search_cross_val:
-			print_global_results(global_results, args)
+
+def get_results_paths(root: str, args: Namespace) -> List[str]:
+	objects = get_sub_paths(root)
+	objects = [path for path in objects if osp.isdir(path)]
+	results_paths = [path for path in objects if re.search(args.pattern, path) is not None]
+	return results_paths
+
+
+def pre_process_value(value: Any, args: Namespace) -> str:
+	if value is None:
+		return ""
+	elif isinstance(value, float) and args.float_format is not None:
+		return args.float_format.format(value)
+	else:
+		return str(value)
+
+
+def build_matrix_values(results: List[Dict[str, Any]], param_names: List[str], args: Namespace) -> List[List[str]]:
+	return [
+		[pre_process_value(run_results[name], args) if name in run_results else "" for name in param_names]
+		for run_results in results
+	]
+
+
+def build_matrix_cross_val(
+	results: List[Dict[str, Any]], param_names: List[str], args: Namespace
+) -> (List[List[str]], List[str]):
+	groups_run_indexes = []
+	all_folds_val = []
+	for run_index, run_results in enumerate(results):
+		group_index = search_group(run_results, groups_run_indexes, results)
+		if group_index is None:
+			groups_run_indexes.append([run_index])
 		else:
-			groups = []
-			for i, (results, args_dict, best_dict) in enumerate(zip(global_results, global_args_dict, global_best_dict)):
-				group_idx = get_group(results, args_dict, groups)
-				info = (i, results, args_dict, best_dict)
-				if group_idx is not None:
-					groups[group_idx].append(info)
-				else:
-					groups.append([info])
+			groups_run_indexes[group_index].append(run_index)
 
-			groups = [group for group in groups if len(group) > 1]
+		if FOLDS_VAL_KEY in run_results.keys() and run_results[FOLDS_VAL_KEY] not in all_folds_val:
+			all_folds_val.append(run_results[FOLDS_VAL_KEY])
 
-			global_results = []
-			for group in groups:
-				_, first_results, _, _ = group[0]
-				group_results = dict(first_results)
+	all_folds_val.sort(key=lambda x: str(x))
 
-				val_acc = [best_dict["val/acc"]["best_mean"] for _, _, _, best_dict in group]
-				durations = [results["duration"] for _, results, _, _ in group if results["duration"] != ""]
+	folds_metrics_names = []
+	for name in args.metrics:
+		for folds_val in all_folds_val:
+			folds_metrics_names.append(f"{name}_F{str(folds_val)}")
 
-				group_results["Mean acc"] = "{:.2f}%".format(np.mean(val_acc) * 100.0)
-				group_results["Std acc"] = "{:.2f}%".format(np.std(val_acc) * 100.0)
-				group_results["Sum duration"] = np.sum(durations) if len(durations) == len(group) else ""
+	param_names_new = \
+		CROSS_VAL_COMMON_KEYS + \
+		[f"{DURATION_KEY}_sum"] + \
+		[f"{name}_mean" for name in args.metrics] + \
+		[f"{name}_std" for name in args.metrics] + \
+		folds_metrics_names
+	other_names = [name for name in param_names if name not in param_names_new]
+	param_names_new = param_names_new + other_names
 
-				group_results.pop("Best val/acc")
-				group_results.pop("Best eval/acc")
-				group_results.pop("folds_val")
-				group_results.pop("duration")
+	matrix = []
+	for group_run_indexes in groups_run_indexes:
+		if len(group_run_indexes) == 0:
+			raise RuntimeError("Found an empty group of cross-validation runs.")
 
-				for idx, _, _, best_dict in group:
-					dirpath = global_dirpaths[idx]
-					folds_val = get_folds_from_dirpath(dirpath)
-					group_results[f"Acc fold {str(folds_val)}"] = "{:.2f}%".format(best_dict["val/acc"]["best_mean"] * 100.0)
+		first_run_results = results[group_run_indexes[0]]
+		common_values = [first_run_results[key] if key in first_run_results else "" for key in CROSS_VAL_COMMON_KEYS]
+		durations = [results[idx][DURATION_KEY] if DURATION_KEY in results[idx] else "" for idx in group_run_indexes]
+		durations_sum = [sum(durations)] if "" not in durations else [""]
 
-				global_results.append(group_results)
+		metrics_values = {
+			metric: [
+				results[idx][metric] if metric in results[idx] else None
+				for idx in group_run_indexes
+			]
+			for metric, criterion in zip(args.metrics, args.criterions)
+		}
+		metrics_means = [
+			np.mean(values) if all((val is not None) for val in values) else "" for values in metrics_values.values()]
+		metrics_stds = [
+			np.std(values) if all((val is not None) for val in values) else "" for values in metrics_values.values()]
 
-			print_global_results(global_results, args)
+		folds_values = []
+		for name, values in metrics_values.items():
+			metric_folds_values = [""] * len(all_folds_val)
+			for i, idx in enumerate(group_run_indexes):
+				metric_value = values[i]
+				if FOLDS_VAL_KEY not in results[idx]:
+					continue
+
+				run_folds_val = results[idx][FOLDS_VAL_KEY]
+				if run_folds_val not in all_folds_val:
+					raise RuntimeError(f"Unknown folds_val list '{str(run_folds_val)}' in group folds val '{str(all_folds_val)}'.")
+
+				index_folds = all_folds_val.index(run_folds_val)
+				if metric_folds_values[index_folds] != "":
+					raise RuntimeError("Found the same fold twice in a group.")
+
+				metric_folds_values[index_folds] = metric_value
+
+			folds_values.extend(metric_folds_values)
+
+		line_values = common_values + durations_sum + metrics_means + metrics_stds + folds_values
+
+		for name in other_names:
+			values = [results[idx][name] if name in results[idx] else "" for idx in group_run_indexes]
+			all_equals = values.count(values[0]) == len(values)
+			if all_equals:
+				line_values.append(values[0])
+			else:
+				line_values.append("")
+
+		line_values = [pre_process_value(value, args) for value in line_values]
+		matrix.append(line_values)
+
+	assert len(matrix) == 0 or len(matrix[0]) == len(param_names_new)
+	return matrix, param_names_new
+
+
+def search_group(
+	run_results: Dict[str, Any], groups_run_indexes: List[List[int]], results: List[Dict[str, Any]]
+) -> Optional[int]:
+	for group_index, group_run_indexes in enumerate(groups_run_indexes):
+		first_results_group = results[group_run_indexes[0]]
+		if are_in_same_group(run_results, first_results_group):
+			return group_index
+	return None
+
+
+def are_in_same_group(run_results_1: Dict[str, Any], run_results_2: Dict[str, Any]) -> bool:
+	return all((
+		key in run_results_1.keys() and key in run_results_2.keys() and run_results_1[key] == run_results_2[key]
+		for key in CROSS_VAL_COMMON_KEYS
+	))
+
+
+def get_column(matrix: List[List[str]], col_idx: int) -> List[str]:
+	return [row[col_idx] for row in matrix]
+
+
+def pass_filters(name: str, args: Namespace) -> bool:
+	include_list = set(args.include_list).union(args.metrics).union(args.default_include_list)
+	included = len(include_list) == 0 or any([re.search(include, name) is not None for include in include_list])
+
+	exclude_list = set(args.exclude_list)
+	excluded = len(exclude_list) > 0 and any([re.search(exclude, name) is not None for exclude in exclude_list])
+	return included and not excluded
+
+
+def print_matrix(param_names: List[str], matrix: List[List[str]], args: Namespace):
+	if args.result_index:
+		num_len = len(str(len(matrix)))
+		print("| {} | {} |".format(" " * num_len, " | ".join(param_names)))
+		for num, line in enumerate(matrix):
+			num_format = f"{{:{num_len}d}}"
+			print("| {} | {} |".format(num_format.format(num), " | ".join(line)))
+	else:
+		print("| {} |".format(" | ".join(param_names)))
+		for num, line in enumerate(matrix):
+			print("| {} |".format(" | ".join(line)))
 
 
 if __name__ == "__main__":

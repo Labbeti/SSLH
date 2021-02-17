@@ -4,6 +4,7 @@ import torch
 from torch import Tensor
 from torch.distributions.beta import Beta
 from torch.nn import Module
+from typing import Tuple, Union
 
 
 class MixUp(Module):
@@ -45,7 +46,7 @@ class MixUp(Module):
 			Apply MixUp to batches and labels.
 		"""
 		if batch_a.shape != batch_b.shape or labels_a.shape != labels_b.shape:
-			raise RuntimeError("Invalid shapes for MixUp : ({:s} != {:s} or {:s} != {:s})".format(
+			raise RuntimeError("Invalid shapes for MixUp : ({} != {} or {} != {})".format(
 				batch_a.shape, batch_b.shape, labels_a.shape, labels_b.shape))
 
 		# Sample from Beta distribution
@@ -61,7 +62,7 @@ class MixUp(Module):
 
 	def get_last_lambda(self) -> float:
 		"""
-			Returns the last lambda sampled. If no data has been passed to forward(), returns 0.0.
+			:returns: the last lambda sampled. If no data has been passed to forward(), returns 0.0.
 		"""
 		return self._lambda
 
@@ -70,17 +71,23 @@ class MixUpBatchShuffle(Module):
 	"""
 		Apply MixUp transform with the same batch in a different order. See MixUp module for details.
 	"""
-	def __init__(self, alpha: float = 0.4, apply_max: bool = False):
+	def __init__(self, alpha: float = 0.4, apply_max: bool = False, return_shuffled_batches: bool = False):
 		super().__init__()
 		self.mixup = MixUp(alpha, apply_max)
+		self.return_shuffled_batches = return_shuffled_batches
 
-	def forward(self, batch: Tensor, labels: Tensor) -> (Tensor, Tensor):
+	def forward(self, batch: Tensor, labels: Tensor) -> Union[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor, Tensor, Tensor]]:
 		assert batch.shape[0] == labels.shape[0]
 		batch_size = batch.shape[0]
 		indexes = torch.randperm(batch_size)
 		batch_shuffle = batch[indexes]
 		labels_shuffle = labels[indexes]
-		return self.mixup(batch, batch_shuffle, labels, labels_shuffle)
+
+		batch_mix, labels_mix = self.mixup(batch, batch_shuffle, labels, labels_shuffle)
+		if not self.return_shuffled_batches:
+			return batch_mix, labels_mix
+		else:
+			return batch_mix, labels_mix, batch_shuffle, labels_shuffle
 
 	def get_last_lambda(self) -> float:
 		return self.mixup.get_last_lambda()

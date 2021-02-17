@@ -16,7 +16,7 @@ class NoRecorder(RecorderABC):
 	def step(self):
 		pass
 
-	def set_storage(self, write_std: bool, write_min_mean: bool, write_max_mean: bool):
+	def set_storage(self, write_mean: bool, write_std: bool, write_min_mean: bool, write_max_mean: bool):
 		pass
 
 	def get_current_means(self) -> Dict[str, float]:

@@ -16,23 +16,31 @@ class CheckPointABC(ABC):
     """
 
     def step(self, new_value: float):
-        """ Method called to update the best model with the value returned by a metric. """
+        """
+            Method called to update the best model with the value returned by a metric.
+
+            :param new_value: The current score of the step.
+        """
         raise NotImplementedError("Abstract method")
 
     def load_best_state(self, model: Optional[Module], optim: Optional[Optimizer]) -> (float, int):
-        """ Loads the best state saved by the checkpoint. """
+        """
+            Loads the best state saved by the checkpoint.
+
+            :param model: The optional module.
+            :param optim: The optional optimizer.
+            :return: A tuple (best score, epoch of the best score).
+        """
         raise NotImplementedError("Abstract method")
 
     def is_saved(self) -> bool:
-        """ Return True if the checkpoint has saved at least 1 model in a file. """
+        """
+            :return: True if the checkpoint has saved at least 1 model in a file.
+        """
         raise NotImplementedError("Abstract method")
 
 
 class CheckPoint(CheckPointABC):
-    """
-        Main class for saving the best model and optimizer in a file.
-    """
-
     def __init__(
         self,
         models: Union[Module, List[Module]],
@@ -44,7 +52,7 @@ class CheckPoint(CheckPointABC):
         verbose: int = 1,
     ):
         """
-            Save best model in a file.
+            Main class for saving the best model and optimizer in a file.
 
             :param models: The module or a list of module to track and save.
             :param optimizer: The Optimizer to track and save.
@@ -57,7 +65,7 @@ class CheckPoint(CheckPointABC):
                 Use 0 for deactivate prints and
                 1 for printing info when the performance is reached.
         """
-        assert mode in ["min", "max"], "Available modes are \"min\" and \"max\"."
+        assert mode in ["min", "max"], "Available modes are 'min' and 'max'."
         self.models = [models] if isinstance(models, Module) else models
         self.optimizer = optimizer
         self.dirpath = dirpath
@@ -83,7 +91,8 @@ class CheckPoint(CheckPointABC):
                 filename = "{:s}_{:d}.torch".format(self.filename_prefix, self._epoch)
                 filepath = osp.join(self.dirpath, filename)
                 if self.verbose >= 1:
-                    print("Best performance reached ! Saving the model in \"{:s}\"...".format(filename))
+                    print("Best performance reached ! Saving the model in '{:s}'...".format(filename))
+
                 best_state = {
                     "nb_models": len(self.models),
                     "models": [
@@ -114,6 +123,7 @@ class CheckPoint(CheckPointABC):
     def reset(self, remove_model_file: bool = False):
         """
             Reset the checkpoint state.
+
             :param remove_model_file: If True, remove the best model file stored by the checkpoint. (default: False)
         """
         self._best_metric = float("-inf") if self.mode == "max" else float("inf")
@@ -124,7 +134,9 @@ class CheckPoint(CheckPointABC):
             self._prev_filepath = None
 
     def _check_is_better(self, new_value: float) -> bool:
-        """ Returns True if the new values must be stored with the current model. """
+        """
+            Returns True if the new values must be stored with the current model.
+        """
         if self.mode == "max":
             return new_value >= self._best_metric
         else:
@@ -167,7 +179,7 @@ class CheckPointMultiple(CheckPointABC):
                 2 for print the renames and deletes of the current files.
             :param nb_bests: Number of the best models to save. Must be >= 1. (default: 5)
         """
-        assert mode in ["min", "max"], "Available modes are \"min\" and \"max\"."
+        assert mode in ["min", "max"], "Available modes are 'min' and 'max'."
         self.models = [models] if isinstance(models, Module) else models
         self.optimizer = optimizer
         self.dirpath = dirpath
@@ -362,6 +374,7 @@ def load_state(
             If None, the values of the modules will be ignored.
         :param optim: The optimizer to update with the values stored in file. (default: None)
             If None, the values of the optimizer will be ignored.
+        :return: A tuple (best score, epoch of the best score).
     """
     data = torch.load(filepath)
 

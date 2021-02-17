@@ -4,13 +4,13 @@ import os.path as osp
 from argparse import Namespace
 from matplotlib import pyplot as plt
 from mlu.datasets.utils import _get_classes_idx
-from sslh.dataset.get_interface import get_dataset_interface
+from sslh.datasets.get_builder import get_dataset_builder
 
 
 def create_args() -> Namespace:
 	args = Namespace()
 	args.dataset = "GSC12"
-	args.dataset_path = osp.join("..", "dataset")
+	args.dataset_path = osp.join("..", "datasets")
 	args.label_smoothing_value = None
 	args.augm_none = None
 	return args
@@ -19,7 +19,7 @@ def create_args() -> Namespace:
 def show():
 	args = create_args()
 
-	itf = get_dataset_interface(args.dataset)
+	itf = get_dataset_builder(args.dataset)
 	dataset_train = itf.get_dataset_train(args.dataset_path)
 	cls_idx_all = _get_classes_idx(dataset_train, itf.get_nb_classes(), target_one_hot=True)
 	proportions = [len(cls_idx) for cls_idx in cls_idx_all]

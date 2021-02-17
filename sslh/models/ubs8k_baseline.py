@@ -22,13 +22,6 @@ class UBS8KBaseline(nn.Module):
 			nn.Linear(672, output_size)
 		)
 
-	@staticmethod
-	def from_args(args: Namespace) -> 'UBS8KBaseline':
-		return UBS8KBaseline(
-			output_size=args.nb_classes,
-			dropout=args.dropout,
-		)
-
 	def forward(self, x):
 		x = x.view(-1, 1, *x.shape[1:])
 
@@ -45,14 +38,6 @@ class UBS8KBaselineRot(UBS8KBaseline):
 			nn.Flatten(),
 			nn.Dropout(dropout),
 			nn.Linear(672, rot_output_size)
-		)
-
-	@staticmethod
-	def from_args(args: Namespace) -> 'UBS8KBaselineRot':
-		return UBS8KBaselineRot(
-			output_size=args.nb_classes,
-			dropout=args.dropout,
-			rot_output_size=args.nb_classes_self_supervised,
 		)
 
 	def forward_rot(self, x):

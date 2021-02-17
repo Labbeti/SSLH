@@ -25,13 +25,6 @@ class CNN03(Module):
 			nn.Linear(720, output_size),
 		)
 
-	@staticmethod
-	def from_args(args: Namespace) -> 'CNN03':
-		return CNN03(
-			output_size=args.nb_classes,
-			dropout=args.dropout,
-		)
-
 	def forward(self, x):
 		x = x.view(-1, 1, *x.shape[1:])
 
@@ -49,14 +42,6 @@ class CNN03Rot(CNN03):
 			nn.Flatten(),
 			nn.Dropout(dropout),
 			nn.Linear(720, rot_output_size),
-		)
-
-	@staticmethod
-	def from_args(args: Namespace) -> 'CNN03Rot':
-		return CNN03Rot(
-			output_size=args.nb_classes,
-			dropout=args.dropout,
-			rot_output_size=args.nb_classes_self_supervised,
 		)
 
 	def forward_rot(self, x):

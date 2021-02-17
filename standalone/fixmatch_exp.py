@@ -14,12 +14,13 @@ import torch
 from argparse import ArgumentParser, Namespace
 
 from mlu.datasets.wrappers import TransformDataset
-from mlu.metrics import CategoricalAccuracy, MetricWrapper, AveragePrecision, RocAuc, DPrime
-from mlu.nn import CrossEntropyWithVectors, Max, JSDivLoss, KLDivLossWithProbabilities
+from mlu.metrics import CategoricalAccuracy, MetricWrapper, FScore
+from mlu.nn import CrossEntropyWithVectors, Max, JSDivLoss, KLDivLossWithProbabilities, BCELossBatchMean
+from mlu.utils.misc import get_nb_parameters
 from mlu.utils.zip_cycle import ZipCycle
 
 from sslh.augments.get_pool import get_transform
-from sslh.dataset.get_interface import DatasetInterface
+from sslh.datasets.get_builder import DatasetBuilder
 from sslh.fixmatch.loss import FixMatchLoss, FixMatchLossSoftReduceU
 from sslh.fixmatch.trainer import FixMatchTrainer
 from sslh.fixmatch.trainer_adv import FixMatchTrainerAdv
@@ -28,18 +29,21 @@ from sslh.fixmatch.trainer_mixup_shuffle import FixMatchTrainerMixUpShuffle
 from sslh.fixmatch.trainer_mixup_teacher import FixMatchTrainerMixUpTeacher
 from sslh.fixmatch.trainer_teacher import FixMatchTrainerTeacher
 from sslh.fixmatch.trainer_teacher_label_u import FixMatchTrainerTeacherLabelU
+from sslh.fixmatch.trainer_threshold_guess import FixMatchTrainerThresholdGuess
 from sslh.fixmatch.trainer_uniloss import FixMatchTrainerUniLoss
 from sslh.mixmatch.warmup import WarmUp
 from sslh.models.get_model import get_model
 from sslh.utils.args import post_process_args, check_args, add_common_args
-from sslh.utils.misc import build_optimizer, build_scheduler, build_tensorboard_writer, build_checkpoint, get_prefix, main_run
+from sslh.utils.misc import (
+	get_optimizer, get_scheduler, get_tensorboard_writer, get_checkpoint, get_prefix, main_run, get_activation, evaluate
+)
 from sslh.utils.recorder.recorder import Recorder
-from sslh.utils.save import save_results
+from sslh.utils.save import save_results_files
 from sslh.utils.types import str_to_bool, str_to_optional_str
 from sslh.validation.validater import Validater
 
 from time import time
-from torch.nn import MSELoss, BCELoss
+from torch.nn import MSELoss, DataParallel
 from typing import Dict, List, Optional
 
 
@@ -48,72 +52,93 @@ RUN_NAME = "FixMatchExp"
 
 def create_args() -> Namespace:
 	parser = ArgumentParser()
-	add_common_args(parser)
+	parser = add_common_args(parser)
 
-	group_fm = parser.add_argument_group(RUN_NAME)
+	group_fm = parser.add_argument_group(f"{RUN_NAME} args")
+
 	group_fm.add_argument("--lambda_u", type=float, default=1.0,
-		help="MixMatch, FixMatch and ReMixMatch \"lambda_u\" hyperparameter. "
-			 "Coefficient of unsupervised loss component. (default: 1.0)")
-	group_fm.add_argument("--batch_size_u", "--bsize_u", type=int, default=128,
+		help="MixMatch, FixMatch and ReMixMatch 'lambda_u' hyperparameter. "
+		"Coefficient of unsupervised loss component. (default: 1.0)")
+
+	group_fm.add_argument("--batch_size_u", "--bsize_u", "--bu", type=int, default=30,
 		help="Batch size used for unsupervised loader. (default: 128)")
 
 	group_fm.add_argument("--criterion_s", type=str, default="ce",
 		choices=["mse", "ce", "kl", "js", "bce"],
-		help="FixMatch supervised loss component. (default: ce)")
+		help="FixMatch supervised loss component. (default: 'ce')")
+
 	group_fm.add_argument("--criterion_u", type=str, default="ce",
 		choices=["mse", "ce", "kl", "js", "bce"],
-		help="FixMatch unsupervised loss component. (default: ce)")
+		help="FixMatch unsupervised loss component. (default: 'ce')")
 
 	group_fm.add_argument("--threshold", "--threshold_confidence", type=float, default=0.95,
 		help="FixMatch threshold for compute confidence mask in loss. (default: 0.95)")
 
 	group_fm.add_argument("--use_mixup", "--mixup", type=str_to_bool, default=False,
 		help="Apply MixUp between supervised and unsupervised data. (default: False)")
+
 	group_fm.add_argument("--alpha", "--mixup_alpha", type=float, default=0.75,
 		help="Alpha hyperparameter used in MixUp. (default: 0.75)")
 
 	group_fm.add_argument("--use_uniloss", type=str_to_bool, default=False,
 		help="Use experimental uniloss training. (default: False)")
+
 	group_fm.add_argument("--start_probs", type=float, nargs=2, default=[1.0, 0.0],
 		help="Probabilities to compute losses at start for Uniloss. (default: [1.0, 0.0])")
+
 	group_fm.add_argument("--target_probs", type=float, nargs=2, default=[0.5, 0.5],
 		help="Probabilities to compute losses at end for Uniloss. (default: [0.5, 0.5])")
 
 	group_fm.add_argument("--use_adversarial", "--use_adv", type=str_to_bool, default=False,
 		help="Use adversarial data instead of augmentations in MixMatch. (default: False)")
+
 	group_fm.add_argument("--epsilon_adv_weak", type=float, default=1e-2,
 		help="Epsilon used in FGSM adversarial method. (default: 1e-2)")
+
 	group_fm.add_argument("--epsilon_adv_strong", type=float, default=1e-0,
 		help="Epsilon used in FGSM adversarial method. (default: 1e-0)")
 
 	group_fm.add_argument("--augm_none", type=str_to_optional_str, default=None,
 		help="Augment pool for default training dataset. (default: None)")
+
 	group_fm.add_argument("--augm_weak", type=str_to_optional_str, default="weak",
-		help="Augment pool for weak augmentation to use. (default: weak)")
+		help="Augment pool for weak augmentation to use. (default: 'weak')")
+
 	group_fm.add_argument("--augm_strong", type=str_to_optional_str, default="strong",
-		help="Augment pool for strong augmentation to use. (default: strong)")
+		help="Augment pool for strong augmentation to use. (default: 'strong')")
 
 	group_fm.add_argument("--use_mixup_shuffle", type=str_to_bool, default=False,
 		help="Use MixUp between batch with itself shuffled (no mix between labeled and unlabeled data). (default: False)")
 
 	group_fm.add_argument("--use_teacher", "--teacher", type=str_to_bool, default=False,
-		help="Use a teacher for guessing labels. The teacher is updated with an EMA.")
-	group_fm.add_argument("--ema_decay", "--decay", type=float, default=0.999,
-		help="EMA decay used by FixMatch-Teacher.")
-	group_fm.add_argument("--use_teacher_true_label_u", type=str_to_bool, default=False,
-		help="Use a teacher for guessing labels. The teacher is updated with an EMA.")
+		help="Use a teacher for guessing labels. The teacher is updated with an EMA. (default: False)")
 
-	group_fm.add_argument("--use_warmup", type=str_to_bool, default=False,
-		help="Use WarmUp on lambda_u hparam every epochs. Compatible with most of the training variants.")
+	group_fm.add_argument("--ema_decay", "--decay", type=float, default=0.999,
+		help="EMA decay used by FixMatch-Teacher. (default: 0.999)")
+
+	group_fm.add_argument("--use_teacher_true_label_u", type=str_to_bool, default=False,
+		help="Use a teacher for guessing labels. The teacher is updated with an EMA. (default: False)")
+
+	group_fm.add_argument("--use_warmup_by_iteration", type=str_to_bool, default=False,
+		help="Use WarmUp on lambda_u hparam every epochs. Compatible with most of the training variants. (default: False)")
+
 	group_fm.add_argument("--warmup_nb_epochs", type=int, default=10,
-		help="The number of epochs before warmup reach the lambda_u max value.")
+		help="The number of epochs before warmup reach the lambda_u max value. (default: 10)")
 
 	group_fm.add_argument("--use_mixup_teacher", type=str_to_bool, default=False,
-		help="Combine MixUp and Teacher with FixMatch.")
+		help="Combine MixUp and Teacher with FixMatch. (default: False)")
 
 	group_fm.add_argument("--use_soft_reduce_u", type=str_to_bool, default=False,
 		help="Activate soft reduce u for FixMatch loss, which means the unsupervised loss component is mean reduced "
-			 "using the number of pseudo labels used instead of the bsize_u.")
+			"using the number of pseudo labels used instead of the bsize_u. (default: False)")
+
+	group_fm.add_argument("--use_threshold_guess", type=str_to_bool, default=False,
+		help="Use a threshold for binarize label in fixmatch. Use --threshold_guess option for control this threshold. "
+			"(default: False)")
+
+	group_fm.add_argument("--threshold_guess", type=float, default=0.5,
+		help="Threshold used for binarize guessed label in fixmatch. Useful for replace argmax() when targets are multihot. "
+			"(default: 0.5)")
 
 	args = parser.parse_args()
 	args = post_process_args(args)
@@ -130,7 +155,8 @@ def create_args() -> Namespace:
 def run_fixmatch_exp(
 	args: Namespace,
 	start_date: str,
-	interface: DatasetInterface,
+	git_hash: str,
+	builder: DatasetBuilder,
 	folds_train: Optional[List[int]],
 	folds_val: Optional[List[int]],
 	device: torch.device,
@@ -140,25 +166,24 @@ def run_fixmatch_exp(
 
 		:param args: The argparse arguments fo the run.
 		:param start_date: Date of the start of the run.
+		:param git_hash: The current git hash of the repository.
 		:param folds_train: The folds used for training the model.
 		:param folds_val: The folds used for validating the model.
-		:param interface: The dataset interface used for training.
+		:param builder: The dataset builder used for training.
 		:param device: The main Pytorch device to use.
 		:return: A dictionary containing the min and max scores on all epochs.
 	"""
 
 	# Builds augmentations
-	data_type = interface.get_data_type()
-	transform_base = interface.get_base_transform()
-	transform_none = get_transform(args.augm_none, args, data_type, transform_base)
-	transform_weak = get_transform(args.augm_weak, args, data_type, transform_base)
-	transform_strong = get_transform(args.augm_strong, args, data_type, transform_base)
-	transform_val = transform_base
-	target_transform = interface.get_target_transform()
+	transform_none = get_transform(args.augm_none, args, builder)
+	transform_weak = get_transform(args.augm_weak, args, builder)
+	transform_strong = get_transform(args.augm_strong, args, builder)
+	transform_val = get_transform("identity", args, builder)
+	target_transform = builder.get_target_transform()
 
-	dataset_train_raw = interface.get_dataset_train(args.dataset_path, folds=folds_train)
-	dataset_val = interface.get_dataset_val(args.dataset_path, transform_val, target_transform, folds=folds_val)
-	dataset_eval = interface.get_dataset_eval(args.dataset_path, transform_val, target_transform)
+	dataset_train_raw = builder.get_dataset_train(args.dataset_path, folds=folds_train, version=args.train_version)
+	dataset_val = builder.get_dataset_val(args.dataset_path, transform_val, target_transform, folds=folds_val)
+	dataset_eval = builder.get_dataset_eval(args.dataset_path, transform_val, target_transform)
 
 	if not args.use_adversarial:
 		def transform_weak_label(item: tuple) -> tuple:
@@ -183,7 +208,7 @@ def run_fixmatch_exp(
 		dataset_train_augm_weak_strong_no_label = TransformDataset(
 			dataset_train_raw, transform_weak_strong_, index=None)
 
-		loader_train_s, loader_train_u = interface.get_loaders_split(
+		loader_train_s, loader_train_u = builder.get_loaders_split(
 			labeled_dataset=dataset_train_raw,
 			ratios=[args.supervised_ratio, 1.0 - args.supervised_ratio],
 			datasets=[dataset_train_augm_weak, dataset_train_augm_weak_strong_no_label],
@@ -200,7 +225,7 @@ def run_fixmatch_exp(
 		dataset_train_augm_none = TransformDataset(
 			dataset_train_raw, transform_none_label, index=None)
 
-		loader_train_s, loader_train_u = interface.get_loaders_split(
+		loader_train_s, loader_train_u = builder.get_loaders_split(
 			labeled_dataset=dataset_train_raw,
 			ratios=[args.supervised_ratio, 1.0 - args.supervised_ratio],
 			datasets=[dataset_train_augm_none, dataset_train_augm_none],
@@ -211,20 +236,21 @@ def run_fixmatch_exp(
 		)
 
 	loader_train = ZipCycle([loader_train_s, loader_train_u], policy=args.zip_cycle_policy)
-	loader_val = interface.get_loader_val(dataset_val, args.batch_size_s, False, 0)
+	loader_val = builder.get_loader_val(dataset_val, args.batch_size_s)
 
 	# Prepare model
-	model = get_model(args.model, args, device=device)
-	model_name = model.__class__.__name__
-	optim = build_optimizer(args, model)
-	activation = lambda x, dim: x.softmax(dim=dim).clamp(min=2e-30)
+	model = get_model(args.model, args, builder, device)
+	if args.nb_gpu > 1:
+		model = DataParallel(model)
+	optim = get_optimizer(args, model)
+	activation = get_activation(args.activation, clamp=True, clamp_min=2e-30)
 
 	loss_mapper = {
 		"mse": MSELoss(reduction="none"),
 		"ce": CrossEntropyWithVectors(reduction="none"),
 		"kl": KLDivLossWithProbabilities(reduction="none"),
 		"js": JSDivLoss(reduction="none"),
-		"bce": BCELoss(reduction="none"),
+		"bce": BCELossBatchMean(),
 	}
 	criterion_s = loss_mapper[args.criterion_s]
 	criterion_u = loss_mapper[args.criterion_u]
@@ -233,10 +259,10 @@ def run_fixmatch_exp(
 	else:
 		criterion = FixMatchLossSoftReduceU(criterion_s, criterion_u)
 
-	sched = build_scheduler(args, optim)
+	sched = get_scheduler(args, optim)
 
 	# Prepare metrics
-	target_type = interface.get_target_type()
+	target_type = builder.get_target_type()
 	if target_type == "monolabel":
 		main_metric_name = "val/acc"
 
@@ -247,19 +273,22 @@ def run_fixmatch_exp(
 			"val/ce": MetricWrapper(CrossEntropyWithVectors(dim=1)),
 			"val/max": MetricWrapper(Max(dim=1), use_target=False, reduce_fn=torch.mean),
 		}
+
 	elif target_type == "multilabel":
-		main_metric_name = "val/mAP"
-		metrics_train_s = {"train/mAP_s": AveragePrecision(), "train/mAUC_s": RocAuc(), "train/dPrime_s": DPrime()}
-		metrics_train_u = {"train/mAP_u": AveragePrecision(), "train/mAUC_u": RocAuc(), "train/dPrime_u": DPrime()}
-		metrics_val = {"val/mAP": AveragePrecision(), "val/mAUC": RocAuc(), "val/dPrime": DPrime()}
+		main_metric_name = "val/fscore"
+
+		metrics_train_s = {"train/fscore_s": FScore()}
+		metrics_train_u = {"train/fscore_u": FScore()}
+		metrics_val = {"val/fscore": FScore()}
+
 	else:
-		raise RuntimeError(f"Unknown target type \"{target_type}\".")
+		raise RuntimeError(f"Unknown target type '{target_type}'.")
 
 	# Prepare objects for saving data
-	prefix = get_prefix(args, folds_val, interface, start_date, model_name, RUN_NAME)
-	writer, dirpath_writer = build_tensorboard_writer(args, prefix)
+	prefix = get_prefix(args, folds_val, builder, start_date, args.model, RUN_NAME)
+	writer, dirpath_writer = get_tensorboard_writer(args, prefix)
 	recorder = Recorder(writer)
-	checkpoint = build_checkpoint(args, dirpath_writer, model, optim)
+	checkpoint = get_checkpoint(args, dirpath_writer, model, optim)
 
 	# Start main training
 	if args.use_mixup:
@@ -323,6 +352,14 @@ def run_fixmatch_exp(
 			alpha=args.alpha,
 			decay=args.ema_decay,
 		)
+	elif args.use_threshold_guess:
+		trainer = FixMatchTrainerThresholdGuess(
+			model, activation, optim, loader_train, metrics_train_s, metrics_train_u, recorder, criterion,
+			device=device,
+			threshold=args.threshold,
+			lambda_u=args.lambda_u,
+			threshold_guess=args.threshold_guess,
+		)
 	else:
 		trainer = FixMatchTrainer(
 			model, activation, optim, loader_train, metrics_train_s, metrics_train_u, recorder, criterion,
@@ -341,20 +378,23 @@ def run_fixmatch_exp(
 	if sched is not None:
 		validater.add_callback_on_end(sched)
 
-	if args.use_warmup:
+	if args.use_warmup_by_iteration:
 		warmup = WarmUp(max_value=args.lambda_u, nb_steps=args.warmup_nb_epochs, obj=trainer, attr_name="lambda_u")
 		validater.add_callback_on_end(warmup)
 
 	trainer.add_callback_on_end(recorder)
 	validater.add_callback_on_end(recorder)
 
-	print("Dataset : {:s} (train={:d}, val={:d}, eval={:s}).".format(
+	print("Dataset : {:s} (train={:d}, val={:d}, eval={:s}, folds_train={:s}, folds_val={:s}).".format(
 		args.dataset_name,
 		len(dataset_train_raw),
 		len(dataset_val),
-		str(len(dataset_eval)) if dataset_eval is not None else "None"
+		str(len(dataset_eval)) if dataset_eval is not None else "None",
+		str(folds_train),
+		str(folds_val)
 	))
-	print("\nStart {:s} training on {:s} with model \"{:s}\" and {:d} epochs ({:s})...".format(RUN_NAME, args.dataset_name, model_name, args.nb_epochs, args.tag))
+	print("Model: {:s} ({:d} parameters).".format(args.model, get_nb_parameters(model)))
+	print("\nStart {:s} training with {:d} epochs (tag: '{:s}')...".format(RUN_NAME, args.nb_epochs, args.tag))
 	start_time = time()
 
 	for epoch in range(args.nb_epochs):
@@ -362,36 +402,15 @@ def run_fixmatch_exp(
 		validater.val(epoch)
 		print()
 
-	print("\nEnd {:s} training. (duration = {:.2f})".format(RUN_NAME, time() - start_time))
+	duration = time() - start_time
+	print("\nEnd {:s} training. (duration = {:.2f}s)".format(RUN_NAME, duration))
 
-	if dataset_eval is not None and checkpoint is not None and checkpoint.is_saved():
-		recorder.set_storage(write_std=False, write_min_mean=False, write_max_mean=False)
-		checkpoint.load_best_state(model, None)
-		loader_eval = interface.get_loader_val(dataset_eval, batch_size=args.batch_size_s, drop_last=False, num_workers=0)
-		validater = Validater(model, activation, loader_eval, metrics_val, recorder, name="eval")
-		validater.val(0)
+	evaluate(args, model, activation, builder, checkpoint, recorder, dataset_val, dataset_eval)
 
 	# Save results
-	save_results(dirpath_writer, args, recorder, {}, main_metric_name, start_date, folds_val, start_time)
+	save_results_files(dirpath_writer, RUN_NAME, duration, start_date, git_hash, folds_train, folds_val, builder, args, recorder)
 
-	if main_metric_name in recorder.get_all_names():
-		idx_min, min_, idx_max, max_ = recorder.get_min_max(main_metric_name)
-		print(f"Metric : \"{main_metric_name}\"")
-		print(f"Max mean : {max_} at epoch {idx_max}")
-		print(f"Min mean : {min_} at epoch {idx_min}")
-
-		best = {
-			main_metric_name: {
-				"max": max_,
-				"idx_max": idx_max,
-				"min": min_,
-				"idx_min": idx_min,
-			}
-		}
-	else:
-		best = {}
-
-	return best
+	return recorder.get_all_min_max()
 
 
 def main():

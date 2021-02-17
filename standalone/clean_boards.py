@@ -23,7 +23,7 @@ def get_size(path: str, recursive: bool = True) -> int:
 		else:
 			return 0
 	else:
-		raise RuntimeError("Unknown element \"{:s}\".".format(osp.join(path)))
+		raise RuntimeError(f"Unknown element '{path}'.")
 
 
 def check_if_remove(path: str, minimal_size: int, pattern: Optional[str]) -> bool:
@@ -48,14 +48,14 @@ def main():
 		boards = os.listdir(tensorboard_root)
 		boards = [board for board in boards if osp.isdir(osp.join(tensorboard_root, board))]
 
-		print("Check tensorboard root \"{:s}\" with {:d} elements.".format(tensorboard_root, len(boards)))
+		print("Check tensorboard root '{:s}' with {:d} elements.".format(tensorboard_root, len(boards)))
 
 		to_remove = []
 		for i, board_name in enumerate(sorted(boards)):
 			board_path = osp.join(tensorboard_root, board_name)
 			remove = args.all or check_if_remove(board_path, args.minimal_size, args.pattern)
 			size = get_size(board_path)
-			print("{:2d} - Tensorboard: (Remove:{:4s}, Size:{:6d}, Name:\"{:s}\").".format(
+			print("{:2d} - Tensorboard: (Remove:{:4s}, Size:{:6d}, Name:'{:s}').".format(
 				i + 1, "YES" if remove else "no", size, board_name))
 
 			if remove:

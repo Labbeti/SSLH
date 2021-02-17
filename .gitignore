@@ -5,7 +5,7 @@
 .vscode/
 __pycache__/
 build/
-datasets/
+data/
 dist/
 old/
 results/
@@ -24,4 +24,4 @@ tensorboard/
 .tmp_sbatch.sh
 .sbatch_*.sh
 .sbatch.sh
-*.ign*
+*ign*

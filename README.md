@@ -1,8 +1,7 @@
 # Semi Supervised Learning with Holistic methods (SSLH)
 
-Holistic methods for Semi-Supervised Learning : MixMatch, ReMixMatch and FixMatch for ESC-10, UrbanSound8k and GoogleSpeechCommands datasets.
-
-[comment]: <>  (TODO : CIFAR-10 still need to be fixed)
+Holistic methods for Semi-Supervised Learning : **MixMatch** and **FixMatch** for ESC-10, UrbanSound8k and GoogleSpeechCommands datasets.
+This repository also contains 
 
 ## Installation
 #### Prerequisites
@@ -44,7 +43,6 @@ For UrbanSound8k, please read the [README of leocances](https://github.com/leoca
 The main scripts available are in folder ```standalone/``` :
 - ```supervised.py```
 - ```mixmatch.py```
-- ```remixmatch.py```
 - ```fixmatch.py```
 
 Example :
@@ -67,12 +65,14 @@ You can find a mixmatch fast code example in a notebook [standalone/mixmatch.ipy
 
 #### Categorical Accuracies (%)
 [comment]: <> (TODO)
-| Dataset | Supervised 10% | Supervised 100% | MixMatch | FixMatch | Supervised 10% + MixUp | Supervised 100% + MixUp | FixMatch + MixUp |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| ESC10 (cross-validation) | 62.78 | 92.33 | 59.44 | 64.44 | 63.56 | 92.67 | 63.11 |
-| UBS8K (cross-validation) | 67.13 | 76.36 | 73.22 | 69.58 | 68.69 | 77.39 | 75.33 |
-| GSC (35 classes, evaluation) | 89.68 | 94.43 | 92.69 | 83.88 | 92.29 | 96.97 | 93.21 |
-| GSC12 (10 classes + unknown and silence classes, evaluation) | 93.44 | 97.19 | 95.21 | 83.56 | 93.84 | 97.72 | 90.32 |
+
+[comment]: <> (| Dataset | Supervised 10% | Supervised 100% | MixMatch | FixMatch | Supervised 10% + MixUp | Supervised 100% + MixUp | FixMatch + MixUp |)
+[comment]: <> (| --- | --- | --- | --- | --- | --- | --- | --- |)
+[comment]: <> (| ESC10 &#40;cross-validation&#41; | 62.78 | 92.33 | 59.44 | 64.44 | 63.56 | 92.67 | 63.11 |)
+[comment]: <> (| UBS8K &#40;cross-validation&#41; | 67.13 | 76.36 | 73.22 | 69.58 | 68.69 | 77.39 | 75.33 |)
+[comment]: <> (| GSC &#40;35 classes, evaluation&#41; | 89.68 | 94.43 | 92.69 | 83.88 | 92.29 | 96.97 | 93.21 |)
+[comment]: <> (| GSC12 &#40;10 classes + unknown and silence classes, evaluation&#41; | 93.44 | 97.19 | 95.21 | 83.56 | 93.84 | 97.72 | 90.32 |)
+
 
 ## Code overview 
 - ```sslh``` :
@@ -101,7 +101,7 @@ You can find a mixmatch fast code example in a notebook [standalone/mixmatch.ipy
 | fm | FixMatch |
 | fn, func | Function |
 | GSC | Google Speech Commands (with 35 classes) |
-| GSC10 | Google Speech Commands (with 10 classes from GSC, 1 unknown class and 1 silence class) |
+| GSC12 | Google Speech Commands (with 10 classes from GSC, 1 unknown class and 1 silence class) |
 | hparams | Hyperparameters |
 | js | Jensen-Shannon |
 | kl | Kullback-Leibler |

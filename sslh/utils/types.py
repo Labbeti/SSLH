@@ -14,6 +14,7 @@ class IterableSized(Iterable, Sized, Protocol):
 def str_to_bool(x: str) -> bool:
 	"""
 		Convert a string to bool. Case insensitive.
+
 		:param x:
 			x in ["true", "1", "yes", "y"] => True
 			x in ["false", "0", "no", "n"] => False
@@ -26,12 +27,13 @@ def str_to_bool(x: str) -> bool:
 	elif x_low in ["false", "0", "no", "n"]:
 		return False
 	else:
-		raise RuntimeError("Invalid boolean argument \"{:s}\".".format(x))
+		raise RuntimeError("Invalid boolean argument '{:s}'.".format(x))
 
 
 def str_to_optional_bool(x: str) -> Optional[bool]:
 	"""
 		Convert a string to optional bool value. Case insensitive.
+
 		:param x:
 			x in ["none"] => None
 			x in ["true", "1", "yes", "y"] => True
@@ -49,6 +51,7 @@ def str_to_optional_bool(x: str) -> Optional[bool]:
 def str_to_optional_str(x: str) -> Optional[str]:
 	"""
 		Convert string to optional string value. Case insensitive.
+
 		:param x: Any string value.
 		:returns: None if x == "None", otherwise the string value.
 	"""
@@ -62,6 +65,7 @@ def str_to_optional_str(x: str) -> Optional[str]:
 def str_to_optional_int(x: str) -> Optional[int]:
 	"""
 		Convert string to optional integer value. Case insensitive.
+
 		:param x: Any string value.
 		:returns: Integer value, None or throw ValueError exception.
 	"""
@@ -75,6 +79,7 @@ def str_to_optional_int(x: str) -> Optional[int]:
 def str_to_optional_float(x: str) -> Optional[float]:
 	"""
 		Convert string to optional float value. Case insensitive.
+
 		:param x: Any string value.
 		:returns: Float value, None or throw ValueError exception.
 	"""
@@ -88,6 +93,7 @@ def str_to_optional_float(x: str) -> Optional[float]:
 def str_to_union_str_int(x: str) -> Union[str, int]:
 	"""
 		Convert string to integer value or string value.
+
 		:param x: Any string value.
 		:returns: If x is digit, return the integer value, otherwise returns a the same string value.
 	"""
@@ -113,7 +119,7 @@ def float_in_range(
 		if min_ < x < max_ or (include_min and x == min_) or (include_max and x == max_):
 			return x
 		else:
-			raise ValueError("Value \"{:s}\" is not a float in range {:s}{:f},{:f}{:s}".format(
+			raise ValueError("Value '{:s}' is not a float in range {:s}{:f},{:f}{:s}".format(
 				str(x), "[" if include_min else "]", min_, max_, "]" if include_max else "["))
 	return float_in_range_impl
 

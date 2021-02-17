@@ -1,9 +1,17 @@
 echo "START"
 echo "$@"
-# cat $@
 
 was_suffix=false
 was_run=false
+
+run=1
+if [ $run = 1 ]
+then
+echo "COUCOU"
+fi
+
+exit 0
+
 
 for arg in $@
 do

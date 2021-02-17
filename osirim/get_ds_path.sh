@@ -1,5 +1,5 @@
 
-dataset_path="None"
+dataset_path="UNKNOWN_DATASET_PATH"
 
 case $1 in
 	"CIFAR10" )
@@ -15,6 +15,8 @@ case $1 in
 	"GSC12" )
 		dataset_path="/projets/samova/elabbe/GSC/";;
 	"AUDIOSET" )
+		dataset_path="/projets/samova/leocances/AudioSet/hdfs/";;
+	"AUDIOSET_RAW" )
 		dataset_path="/projets/samova/CORPORA/AUDIOSET/";;
 esac
 

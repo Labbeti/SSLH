@@ -1,1 +1,2 @@
-sslh/dataset/metadata/as_labels.csv
+include README.md
+include sslh/dataset/metadata/as_labels.csv

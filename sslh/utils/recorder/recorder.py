@@ -1,5 +1,6 @@
 
 import math
+import torch
 
 from mlu.metrics import MinTracker, MaxTracker, IncrementalMean, IncrementalStd
 from sslh.utils.recorder.base import RecorderABC
@@ -13,6 +14,7 @@ class Recorder(RecorderABC):
 	def __init__(
 		self,
 		writer: Optional[SummaryWriter] = None,
+		write_mean: bool = True,
 		write_std: bool = False,
 		write_min_mean: bool = False,
 		write_max_mean: bool = True,
@@ -20,6 +22,7 @@ class Recorder(RecorderABC):
 	):
 		super().__init__()
 		self.writer = writer
+		self.write_mean = write_mean
 		self.write_std = write_std
 		self.write_min_mean = write_min_mean
 		self.write_max_mean = write_max_mean
@@ -41,6 +44,9 @@ class Recorder(RecorderABC):
 		self._steps = {}
 
 	def add_scalar(self, name: str, value: Union[Tensor, float]):
+		if isinstance(value, Tensor) and not torch.as_tensor(value.shape, dtype=torch.int).prod() == 1:
+			raise RuntimeError(f"Cannot add a non-scalar tensor of shape {str(value.shape)}.")
+
 		if self.check_nan and math.isnan(value):
 			raise RuntimeError(f"Found NaN value for scalar {name}.")
 
@@ -54,11 +60,10 @@ class Recorder(RecorderABC):
 	def step(self):
 		self._update_best()
 		self._update_writer()
+		self._clear_currents()
 
-		self._current_means = {}
-		self._current_stds = {}
-
-	def set_storage(self, write_std: bool, write_min_mean: bool, write_max_mean: bool):
+	def set_storage(self, write_mean: bool, write_std: bool, write_min_mean: bool, write_max_mean: bool):
+		self.write_mean = write_mean
 		self.write_std = write_std
 		self.write_min_mean = write_min_mean
 		self.write_max_mean = write_max_mean
@@ -86,19 +91,6 @@ class Recorder(RecorderABC):
 	def get_writer(self) -> Optional[SummaryWriter]:
 		return self.writer
 
-	def get_all_min_max(self) -> Dict[str, Dict[str, Union[int, float]]]:
-		# TODO : rem ?
-		all_min_max = {}
-		for name in self.get_all_names():
-			idx_min, min_, idx_max, max_ = self.get_min_max(name)
-			all_min_max[name] = {
-				"idx_min": idx_min,
-				"min": min_,
-				"idx_max": idx_max,
-				"max": max_,
-			}
-		return all_min_max
-
 	def _update_best(self):
 		new_names = set(self._current_means.keys()).difference(self._mins_means.keys())
 		for name in new_names:
@@ -111,15 +103,15 @@ class Recorder(RecorderABC):
 
 	def _update_writer(self):
 		if self.writer is not None:
-			names = self.get_all_names()
-			for name in names:
+			for name in self._current_means.keys():
 				if name in self._steps.keys():
 					self._steps[name] += 1
 				else:
 					self._steps[name] = 0
 
-			for name, mean in self._current_means.items():
-				self.writer.add_scalar(name, mean.get_current(), self._steps[name])
+			if self.write_mean:
+				for name, mean in self._current_means.items():
+					self.writer.add_scalar(name, mean.get_current(), self._steps[name])
 
 			if self.write_std:
 				suffix = "std"
@@ -140,3 +132,7 @@ class Recorder(RecorderABC):
 					self.writer.add_scalar(f"{section}_{suffix}/{sub_name}", maxs.get_current(), self._steps[name])
 
 			self.writer.flush()
+
+	def _clear_currents(self):
+		self._current_means = {}
+		self._current_stds = {}

@@ -12,6 +12,12 @@ class MixMatchLoss(Module):
 		criterion_s: Callable = CrossEntropyWithVectors(),
 		criterion_u: Callable = MSELoss(reduction="mean")
 	):
+		"""
+			MixMatch loss Module.
+
+			:param criterion_s: The labeled loss component. (default: CrossEntropyWithVectors())
+			:param criterion_u: The unlabeled loss component. (default: MSELoss(reduction="mean"))
+		"""
 		super().__init__()
 		self.criterion_s = criterion_s
 		self.criterion_u = criterion_u
@@ -29,7 +35,7 @@ class MixMatchLoss(Module):
 			Compute MixMatch loss.
 
 			Generic :
-				loss = lambda_s * mean(criterion_s(pred_s, labels_s)) + lambda_u * mean(criterion_u(pred_u, labels_u))
+				loss = lambda_s * criterion_s(pred_s, labels_s) + lambda_u * criterion_u(pred_u, labels_u)
 
 			:param pred_s: Output of the model for labeled batch s of shape (batch_size, nb_classes).
 			:param pred_u: Output of the model for unlabeled batch u of shape (batch_size, nb_classes).

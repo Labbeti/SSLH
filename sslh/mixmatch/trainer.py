@@ -10,7 +10,7 @@ from sslh.mixmatch.sharpen import sharpen
 from sslh.mixmatch.warmup import WarmUp
 from sslh.trainer_abc import TrainerABC
 from sslh.utils.recorder.base import RecorderABC
-from sslh.utils.torch import merge_first_dimension, same_shuffle
+from sslh.utils.torch import collapse_first_dimension
 from sslh.utils.types import IterableSized
 
 from torch import Tensor
@@ -38,6 +38,7 @@ class MixMatchTrainer(TrainerABC):
 		lambda_s: float = 1.0,
 		lambda_u: float = 1.0,
 		warmup_nb_steps: int = 16000,
+		use_warmup_by_iteration: bool = True,
 	):
 		"""
 			MixMatch trainer.
@@ -49,15 +50,16 @@ class MixMatchTrainer(TrainerABC):
 			:param metrics_s_mix: Metrics used during training on mixed prediction labeled and labels.
 			:param metrics_u_mix: Metrics used during training on mixed prediction unlabeled and labels.
 			:param recorder: The recorder used to store metrics.
-			:param criterion: The loss function.
-			:param printer: The object used to print values during training.
-			:param device: The Pytorch device used for tensors.
-			:param name: The name of the training.
-			:param temperature: The temperature used in sharpening function for Pseudo-labeling.
-			:param alpha: The alpha hyperparameter for MixUp.
-			:param lambda_s: The coefficient of labeled loss component.
-			:param lambda_u: The coefficient of unlabeled loss component.
-			:param warmup_nb_steps: The number of steps used to increase linearly the lambda_u hyperparameter.
+			:param criterion: The loss function. (default: MixMatchLoss())
+			:param printer: The object used to print values during training. (default: ColumnPrinter())
+			:param device: The Pytorch device used for tensors. (default: torch.device('cuda'))
+			:param name: The name of the training. (default: 'train')
+			:param temperature: The temperature used in sharpening function for post-process labels. (default: 0.5)
+			:param alpha: The alpha hyperparameter for MixUp. (default: 0.75)
+			:param lambda_s: The coefficient of labeled loss component. (default: 1.0)
+			:param lambda_u: The coefficient of unlabeled loss component. (default: 1.0)
+			:param warmup_nb_steps: The number of steps used to increase linearly the lambda_u hyperparameter. (default: 16000)
+			:param use_warmup_by_iteration: Activate WarmUp on lambda_u hyperparameter. (default: True)
 		"""
 		super().__init__()
 		self.model = model
@@ -74,12 +76,13 @@ class MixMatchTrainer(TrainerABC):
 		self.temperature = temperature
 		self.lambda_s = lambda_s
 		self.lambda_u = lambda_u
+		self.use_warmup_by_iteration = use_warmup_by_iteration
 
 		self.mixup = MixUp(alpha, apply_max=True)
-		self.warmup_lambda_u = WarmUp(lambda_u, warmup_nb_steps)
-
-		self._mixup_lambda_s = None
-		self._mixup_lambda_u = None
+		if self.use_warmup_by_iteration:
+			self.warmup_lambda_u = WarmUp(lambda_u, warmup_nb_steps, obj=self, attr_name="lambda_u")
+		else:
+			self.warmup_lambda_u = None
 
 	def _train_impl(self, epoch: int):
 		self.model.train()
@@ -109,7 +112,7 @@ class MixMatchTrainer(TrainerABC):
 				labels_s_mix,
 				labels_u_mix,
 				lambda_s=self.lambda_s,
-				lambda_u=self.warmup_lambda_u.get_value()
+				lambda_u=self.lambda_u,
 			)
 			loss.backward()
 			self.optim.step()
@@ -119,18 +122,19 @@ class MixMatchTrainer(TrainerABC):
 				self.recorder.add_scalar("train/loss", loss.item())
 				self.recorder.add_scalar("train/loss_s", loss_s.item())
 				self.recorder.add_scalar("train/loss_u", loss_u.item())
-				self.recorder.add_scalar("train/lambda_u", self.warmup_lambda_u.get_value())
+				self.recorder.add_scalar("train/lambda_u", self.lambda_u)
 
 				for metric_name, metric in self.metrics_s_mix.items():
 					score = metric(pred_s_mix, labels_s_mix)
 					self.recorder.add_scalar(metric_name, score)
 
 				for metric_name, metric in self.metrics_u_mix.items():
-					_mean = metric(pred_u_mix, labels_u_mix)
+					score = metric(pred_u_mix, labels_u_mix)
 					self.recorder.add_scalar(metric_name, score)
 
 				self.printer.print_current_values(self.recorder.get_current_means(), i, len(self.loader), epoch, self.name)
-				self.warmup_lambda_u.step()
+				if self.use_warmup_by_iteration:
+					self.warmup_lambda_u.step()
 
 	def guess_label(self, batch_u_augm_weak_multiple: Tensor, temperature: float) -> Tensor:
 		"""
@@ -138,6 +142,7 @@ class MixMatchTrainer(TrainerABC):
 
 			:param batch_u_augm_weak_multiple: Tensor of shape (K, bsize, data size). Contains the K weakly augmented versions of the same batch.
 			:param temperature: The temperature used for the sharpening operation that increase the higher probability.
+			:return: The labels guessed and post-processed.
 		"""
 		nb_augms = batch_u_augm_weak_multiple.shape[0]
 		preds = [torch.zeros(0) for _ in range(nb_augms)]
@@ -161,18 +166,17 @@ class MixMatchTrainer(TrainerABC):
 		nb_augms = batch_u_multiple.shape[0]
 		repeated_size = [nb_augms] + [1] * (len(labels_u.shape) - 1)
 		labels_u_multiple = labels_u.repeat(repeated_size)
-		batch_u_multiple = merge_first_dimension(batch_u_multiple)
+		batch_u_multiple = collapse_first_dimension(batch_u_multiple)
 
 		batch_w = torch.cat((batch_s, batch_u_multiple))
 		labels_w = torch.cat((labels_s, labels_u_multiple))
 
 		# Shuffle batch and labels
-		batch_w, labels_w = same_shuffle([batch_w, labels_w])
+		indices = torch.randperm(batch_w.shape[0])
+		batch_w, labels_w = batch_w[indices], labels_w[indices]
 
 		len_s = len(batch_s)
 		batch_s_mix, labels_s_mix = self.mixup(batch_s, batch_w[:len_s], labels_s, labels_w[:len_s])
-		self._mixup_lambda_s = self.mixup.get_last_lambda()
 		batch_u_mix, labels_u_mix = self.mixup(batch_u_multiple, batch_w[len_s:], labels_u_multiple, labels_w[len_s:])
-		self._mixup_lambda_u = self.mixup.get_last_lambda()
 
 		return batch_s_mix, batch_u_mix, labels_s_mix, labels_u_mix

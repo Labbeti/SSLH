@@ -34,6 +34,7 @@ class MixMatchTrainerTrueLabel(MixMatchTrainer):
 		lambda_s: float = 1.0,
 		lambda_u: float = 1.0,
 		warmup_nb_steps: int = 16000,
+		use_warmup_by_iteration: bool = True,
 		metrics_s: Dict[str, Metric] = None,
 		metrics_u: Dict[str, Metric] = None,
 	):
@@ -43,23 +44,39 @@ class MixMatchTrainerTrueLabel(MixMatchTrainer):
 			:param model: The pytorch model to train.
 			:param activation: The activation function of the model. (Inputs: (x: Tensor, dim: int)).
 			:param optim: The optimizer used to update the model.
-			:param criterion: The loss function.
 			:param loader: The dataloader used to load ((batch_s_weak, labels_s), (batch_u_weak, batch_u_strong))
 			:param metrics_s_mix: Metrics used during training on mixed prediction labeled and labels.
 			:param metrics_u_mix: Metrics used during training on mixed prediction unlabeled and labels.
 			:param recorder: The recorder used to store metrics.
-			:param printer: The object used to print values during training.
-			:param device: The Pytorch device used for tensors.
-			:param temperature: The temperature used in sharpening function for Pseudo-labeling.
-			:param name: The name of the training.
-			:param alpha: The alpha hyperparameter for MixUp.
-			:param lambda_s: The coefficient of labeled loss component.
-			:param lambda_u: The coefficient of unlabeled loss component.
-			:param warmup_nb_steps: The number of steps used to increase linearly the lambda_u hyperparameter.
+			:param criterion: The loss function. (default: MixMatchLoss())
+			:param printer: The object used to print values during training. (default: ColumnPrinter())
+			:param device: The Pytorch device used for tensors. (default: torch.device('cuda'))
+			:param name: The name of the training. (default: 'train')
+			:param temperature: The temperature used in sharpening function for post-process labels. (default: 0.5)
+			:param alpha: The alpha hyperparameter for MixUp. (default: 0.75)
+			:param lambda_s: The coefficient of labeled loss component. (default: 1.0)
+			:param lambda_u: The coefficient of unlabeled loss component. (default: 1.0)
+			:param warmup_nb_steps: The number of steps used to increase linearly the lambda_u hyperparameter. (default: 16000)
+			:param use_warmup_by_iteration: Activate WarmUp on lambda_u hyperparameter. (default: True)
 		"""
 		super().__init__(
-			model, activation, optim, loader, metrics_s_mix, metrics_u_mix, recorder, criterion, printer, device, name,
-			temperature, alpha, lambda_s, lambda_u, warmup_nb_steps
+			model=model,
+			activation=activation,
+			optim=optim,
+			loader=loader,
+			metrics_s_mix=metrics_s_mix,
+			metrics_u_mix=metrics_u_mix,
+			recorder=recorder,
+			criterion=criterion,
+			printer=printer,
+			device=device,
+			name=name,
+			temperature=temperature,
+			alpha=alpha,
+			lambda_s=lambda_s,
+			lambda_u=lambda_u,
+			warmup_nb_steps=warmup_nb_steps,
+			use_warmup_by_iteration=use_warmup_by_iteration,
 		)
 		self.metrics_s = metrics_s if metrics_s is not None else {}
 		self.metrics_u = metrics_u if metrics_u is not None else {}
@@ -92,8 +109,8 @@ class MixMatchTrainerTrueLabel(MixMatchTrainer):
 				pred_u_mix,
 				labels_s_mix,
 				labels_u_mix,
-				self.lambda_s,
-				lambda_u=self.warmup_lambda_u.get_value()
+				lambda_s=self.lambda_s,
+				lambda_u=self.lambda_u
 			)
 			loss.backward()
 			self.optim.step()
@@ -103,7 +120,7 @@ class MixMatchTrainerTrueLabel(MixMatchTrainer):
 				self.recorder.add_scalar("train/loss", loss.item())
 				self.recorder.add_scalar("train/loss_s", loss_s.item())
 				self.recorder.add_scalar("train/loss_u", loss_u.item())
-				self.recorder.add_scalar("train/lambda_u", self.warmup_lambda_u.get_value())
+				self.recorder.add_scalar("train/lambda_u", self.lambda_u)
 
 				for metric_name, metric in self.metrics_s_mix.items():
 					score = metric(pred_s_mix, labels_s_mix)
@@ -124,4 +141,5 @@ class MixMatchTrainerTrueLabel(MixMatchTrainer):
 					self.recorder.add_scalar(metric_name, score)
 
 				self.printer.print_current_values(self.recorder.get_current_means(), i, len(self.loader), epoch, self.name)
-				self.warmup_lambda_u.step()
+				if self.use_warmup_by_iteration:
+					self.warmup_lambda_u.step()

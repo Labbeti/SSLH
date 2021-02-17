@@ -6,7 +6,7 @@ i=0
 end=5
 
 ds="ESC10"
-logdir="/users/samova/elabbe/root/tensorboard/ESC10/seed_test/"
+logdir="/users/samova/elabbe/root_sslh/tensorboard/ESC10/seed_test/"
 ds_path="`./get_ds_path.sh $ds`"
 
 while [ $i -lt $end ]; do

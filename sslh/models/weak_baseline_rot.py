@@ -12,12 +12,6 @@ class WeakBaselineRot(WeakBaseline):
 			nn.Linear(1696, rot_output_size)
 		)
 
-	@staticmethod
-	def from_args(args: Namespace) -> 'WeakBaselineRot':
-		return WeakBaselineRot(
-			rot_output_size=args.nb_classes_self_supervised,
-		)
-
 	def forward_rot(self, x: Tensor) -> Tensor:
 		# Fox ReMixMatch
 		x = x.view(-1, 1, *x.shape[1:])
@@ -34,12 +28,6 @@ class WeakBaselineCount(WeakBaseline):
 		self.classifier_count = nn.Sequential(
 			nn.Flatten(),
 			nn.Linear(1696, output_size + 1)
-		)
-
-	@staticmethod
-	def from_args(args: Namespace) -> 'WeakBaselineCount':
-		return WeakBaselineCount(
-			output_size=args.nb_classes,
 		)
 
 	def forward_count(self, x: Tensor) -> Tensor:
@@ -59,12 +47,6 @@ class WeakStrongBaselineRot(WeakStrongBaseline):
 		self.classifier_rot = nn.Sequential(
 			nn.Flatten(),
 			nn.Linear(1696, rot_output_size)
-		)
-
-	@staticmethod
-	def from_args(args: Namespace) -> 'WeakStrongBaselineRot':
-		return WeakStrongBaselineRot(
-			rot_output_size=args.nb_classes_self_supervised,
 		)
 
 	def forward_rot(self, x: Tensor) -> Tensor:

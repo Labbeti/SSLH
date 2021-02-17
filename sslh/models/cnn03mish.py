@@ -24,13 +24,6 @@ class CNN03Mish(Module):
 			nn.Linear(720, output_size),
 		)
 
-	@staticmethod
-	def from_args(args: Namespace) -> 'CNN03Mish':
-		return CNN03Mish(
-			output_size=args.nb_classes,
-			dropout=args.dropout,
-		)
-
 	def forward(self, x):
 		x = x.view(-1, 1, *x.shape[1:])
 
@@ -48,14 +41,6 @@ class CNN03MishRot(CNN03Mish):
 			nn.Flatten(),
 			nn.Dropout(dropout),
 			nn.Linear(720, rot_output_size),
-		)
-
-	@staticmethod
-	def from_args(args: Namespace) -> 'CNN03MishRot':
-		return CNN03MishRot(
-			output_size=args.nb_classes,
-			dropout=args.dropout,
-			rot_output_size=args.nb_classes_self_supervised,
 		)
 
 	def forward_rot(self, x):
