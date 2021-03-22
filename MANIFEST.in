@@ -1,2 +1,3 @@
+
 include README.md
-include sslh/dataset/metadata/as_labels.csv
+graft sslh/datasets/metadata

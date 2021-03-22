@@ -1,13 +1,9 @@
 # Semi Supervised Learning with Holistic methods (SSLH)
 
-Holistic methods for Semi-Supervised Learning : **MixMatch** and **FixMatch** for ESC-10, UrbanSound8k and GoogleSpeechCommands datasets.
-This repository also contains 
+Holistic methods for Semi-Supervised Learning (FixMatch, MixMatch, ReMixMatch and UDA) for AudioSet (ADS), CIFAR-10, ESC-10, GoogleSpeechCommands (GSC), Primate Vocalize Corpus (PVC) and UrbanSound8k (UBS8K) datasets.
 
 ## Installation
 #### Prerequisites
-- This project has been made with Ubuntu 20.04 and Python 3.8.5.
-- This installation requires **Anaconda** to manage the Python environment. (version used: 4.8.5) 
-- This project has been made for running with GPU but not with CPU.
 - Make sure you have access to the following repositories : 
   - For UrbanSound8k dataset : https://github.com/leocances/UrbanSound8K (created by Léo Cances)
   - For utility functions and classes : https://github.com/Labbeti/MLU
@@ -17,83 +13,112 @@ This repository also contains
 ```bash
 git clone https://github.com/Labbeti/SSLH
 ```
-- Create a conda environment with the YAML file (passwords can be required during installation) :
+- Set up the package in your environment (passwords can be required during installation) :
 ```bash
 cd SSLH
-conda env create -f environment.yml
-```
-- Activate the new environment :
-```bash
-conda activate env_sslh
-```
-- Setup the main repository :
-```bash
 pip install -e .
 ```
 - Create the results folders :
 ```bash
-mkdir -p results/models results/tensorboard
+./build_directories.sh
+```
+
+The installation is now finished.
+
+#### Alternatives
+The project contains also a ```environment.yaml``` and ```requirements.txt``` for installing the packages respectively with conda or pip :
+- With **conda** environment :
+```bash
+conda create -n env_sslh -f environment.yaml
+pip install -e . --no-dependencies
+```
+
+- With **pip** environment :
+```bash
+pip install -r requirements.txt
+pip install -e . --no-dependencies
 ```
 
 ## Datasets
-CIFAR10, ESC10 and GoogleSpeechCommands are automatically download and installed.
+CIFAR10, ESC10 and GoogleSpeechCommands are automatically downloaded and installed.
 For UrbanSound8k, please read the [README of leocances](https://github.com/leocances/UrbanSound8K/blob/master/README.md#prepare-the-dataset), in section "Prepare the dataset". 
+AudioSet (ADS) and Primate Vocalize Corpus (PVC) cannot be installed automatically for now.
+
+[comment]: <> (TODO : For Audioset install !)
+[comment]: <> (TODO : For PVC install !)
 
 ## Usage
-The main scripts available are in folder ```standalone/``` :
-- ```supervised.py```
-- ```mixmatch.py```
-- ```fixmatch.py```
-
-Example :
+The main scripts available are in directory ```standalone``` :
 ```
-cd standalone/
-python mixmatch.py --dataset ESC10 --dataset_path ../dataset --lr 3e-3
+standalone
+├── fixmatch.py
+├── mixmatch.py
+├── mixup.py
+├── remixmatch.py
+├── supervised.py
+└── uda.py
 ```
 
-Every script contains all the initialisation needed for start training and the train code and losses is in ```sslh/``` folder.
+The code use Hydra for parsing args. The syntax of an argument is "name=value" instead of "--name value".
 
-The ```uda.py``` training is currently unstable.
-The suffix "_exp" indicate that the file contains experimental code for running variants.
+Example : MixMatch on ESC10
+```bash
+python mixmatch.py dataset=esc10
+```
 
-[comment]: <>  (Mettre uda.py quand il marchera)
+Example : Supervised+Weak on GSC
+```bash
+python supervised.py dataset=gsc experiment.augm_train=weak bsize=256 epochs=300
+```
 
-## Notebook
-You can find a mixmatch fast code example in a notebook [standalone/mixmatch.ipynb](https://github.com/Labbeti/SSL/blob/master/standalone/mixmatch.ipynb).
+Example : FixMatch+MixUp on UBS8K
+```bash
+python fixmatch.py dataset=ubs8K dataset.root="../data/UBS8K" experiment=fixmatch_mixup bsize_s=128 bsize_u=128 epochs=300
+```
 
-## Results
+## Package overview
+```
+sslh
+├── callbacks
+├── datamodules
+│     ├── fully_supervised
+│     ├── partial_supervised
+│     └── semi_supervised
+├── datasets
+├── experiments
+│     ├── fixmatch
+│     ├── mixmatch
+│     ├── mixup
+│     ├── remixmatch
+│     ├── supervised
+│     └── uda
+├── metrics
+├── models
+├── transforms
+│     ├── augments
+│     ├── pools
+│     └── self_transforms
+└── utils
+```
 
-#### Categorical Accuracies (%)
-[comment]: <> (TODO)
+## Authors
+This repository has been created by Etienne Labbé (Labbeti on Github).
 
-[comment]: <> (| Dataset | Supervised 10% | Supervised 100% | MixMatch | FixMatch | Supervised 10% + MixUp | Supervised 100% + MixUp | FixMatch + MixUp |)
-[comment]: <> (| --- | --- | --- | --- | --- | --- | --- | --- |)
-[comment]: <> (| ESC10 &#40;cross-validation&#41; | 62.78 | 92.33 | 59.44 | 64.44 | 63.56 | 92.67 | 63.11 |)
-[comment]: <> (| UBS8K &#40;cross-validation&#41; | 67.13 | 76.36 | 73.22 | 69.58 | 68.69 | 77.39 | 75.33 |)
-[comment]: <> (| GSC &#40;35 classes, evaluation&#41; | 89.68 | 94.43 | 92.69 | 83.88 | 92.29 | 96.97 | 93.21 |)
-[comment]: <> (| GSC12 &#40;10 classes + unknown and silence classes, evaluation&#41; | 93.44 | 97.19 | 95.21 | 83.56 | 93.84 | 97.72 | 90.32 |)
+It contains also some code from the following authors :
+- Léo Cancès (leocances on github)
+  - For AudioSet, ESC10, GSC and UBS8K datasets and samplers.
+- Qiuqiang Kong (qiuqiangkong on Github)
+  - For MobileNetV1 & V2 model implementation from [PANN](https://github.com/qiuqiangkong/audioset_tagging_cnn)
 
-
-## Code overview 
-- ```sslh``` :
-    - ```augments``` : Folder of augmentations added and utilities functions for building and managing augments pools.
-    - ```datasets``` : Folder for which contains dataset classes and dataset interfaces for building datasets.
-    - ```fixmatch``` : FixMatch training methods.
-    - ```mixmatch``` : MixMatch training methods.
-    - ```models``` : Models classes available and utilities functions for saving best models in file (Checkpoint).
-    - ```remixmatch``` : ReMixMatch training methods.
-    - ```supervised``` : Supervised training methods.
-    - ```uda``` : UDA training methods.
-    - ```utils``` : Main utilities functions for training methods.
-    - ```validation``` : Validation and tests classes for inference.
-- ```standalone``` :
-    - Main scripts for running a method on a specific dataset.
+## Additional notes
+- This project has been made with Ubuntu 20.04 and Python 3.8.5.
 
 ## Glossary
 | Acronym | Word |
 | --- | --- |
 | ABC | Abstract Class |
 | activation | Activation Function |
+| ADS | AudioSet |
 | aug, augm, augment | Augmentation |
 | ce | Cross-Entropy |
 | ds | Dataset |
@@ -114,5 +139,6 @@ You can find a mixmatch fast code example in a notebook [standalone/mixmatch.ipy
 | rmm | ReMixMatch |
 | s | Supervised |
 | sched | Scheduler |
+| SSL | Semi-Supervised Learning |
 | u | Unsupervised |
 | UBS8K | UrbanSound8K |

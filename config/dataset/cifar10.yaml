@@ -1,0 +1,12 @@
+# @package _group_
+
+name: "CIFAR10"
+fullname: "CIFAR10"
+num_classes: 10
+root: ${path.cifar10}
+monitor: "val/acc"
+monitor_mode: "max"
+val_check_interval: 1.0
+log_on_epoch: true
+
+download: true

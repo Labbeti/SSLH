@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 from torch.nn import Module
-from typing import List, Optional, Tuple, Type
+from typing import Callable, List, Optional, Tuple, Type
 
 
 def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> Module:
@@ -25,24 +25,24 @@ class BasicBlock(nn.Module):
 
 	def __init__(
 		self,
-		inplanes: int,
+		in_planes: int,
 		planes: int,
+		norm_layer: Callable[[int], Module],
 		stride: int = 1,
-		downsample: Optional[Module] = None,
+		down_sample: Optional[Module] = None,
 		groups: int = 1,
 		base_width: int = 64,
 		dilation: int = 1,
-		norm_layer: Optional[Type[Module]] = None
 	):
 		super(BasicBlock, self).__init__()
 
 		# Both self.conv1 and self.downsample layers downsample the input when stride != 1
-		self.conv1 = conv3x3(inplanes, planes, stride)
+		self.conv1 = conv3x3(in_planes, planes, stride)
 		self.bn1 = norm_layer(planes)
 		self.relu = nn.ReLU(inplace=True)
 		self.conv2 = conv3x3(planes, planes)
 		self.bn2 = norm_layer(planes)
-		self.downsample = downsample
+		self.down_sample = down_sample
 		self.stride = stride
 
 		self.expansion = 2
@@ -57,8 +57,8 @@ class BasicBlock(nn.Module):
 		out = self.conv2(out)
 		out = self.bn2(out)
 
-		if self.downsample is not None:
-			identity = self.downsample(x)
+		if self.down_sample is not None:
+			identity = self.down_sample(x)
 
 		out += identity
 		out = self.relu(out)
@@ -92,7 +92,7 @@ class WideResNet(nn.Module):
 		self._norm_layer = norm_layer
 
 		block = BasicBlock
-		self.inplanes = 16*width
+		self.in_planes = 16 * width
 		self.dilation = 1
 		if replace_stride_with_dilation is None:
 			# each element in the tuple indicates if we should replace
@@ -103,8 +103,8 @@ class WideResNet(nn.Module):
 		self.groups = groups
 		self.base_width = width_per_group
 		self.conv1 = nn.Conv2d(
-			num_input_channels, self.inplanes, kernel_size=3, stride=1, padding=1, bias=False)
-		self.bn1 = norm_layer(self.inplanes)
+			num_input_channels, self.in_planes, kernel_size=3, stride=1, padding=1, bias=False)
+		self.bn1 = norm_layer(self.in_planes)
 		self.relu = nn.ReLU(inplace=True)
 		self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 		self.layer1 = self._make_layer(
@@ -137,29 +137,37 @@ class WideResNet(nn.Module):
 
 	def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
 		norm_layer = self._norm_layer
-		downsample = None
+		down_sample = None
 		previous_dilation = self.dilation
 		if dilate:
 			self.dilation *= stride
 			stride = 1
-		if stride != 1 or self.inplanes != planes * block.expansion:
-			downsample = nn.Sequential(
-				conv1x1(self.inplanes, planes * block.expansion, stride),
+		if stride != 1 or self.in_planes != planes * block.expansion:
+			down_sample = nn.Sequential(
+				conv1x1(self.in_planes, planes * block.expansion, stride),
 				norm_layer(planes * block.expansion),
 			)
 
-		layers = []
-		layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
-							self.base_width, previous_dilation, norm_layer))
-		self.inplanes = planes * block.expansion
+		layers = [block(
+			in_planes=self.in_planes,
+			planes=planes,
+			stride=stride,
+			down_sample=down_sample,
+			groups=self.groups,
+			base_width=self.base_width,
+			dilation=previous_dilation,
+			norm_layer=norm_layer,
+		)]
+
+		self.in_planes = planes * block.expansion
 		for _ in range(1, blocks):
 			layers.append(block(
-				self.inplanes,
-				planes,
+				in_planes=self.in_planes,
+				planes=planes,
 				groups=self.groups,
 				base_width=self.base_width,
 				dilation=self.dilation,
-				norm_layer=norm_layer
+				norm_layer=norm_layer,
 			))
 
 		return nn.Sequential(*layers)

@@ -1,0 +1,14 @@
+# @package _group_
+
+name: "ESC10"
+fullname: "ESC10"
+num_classes: 10
+root: ${path.esc10}
+monitor: "val/acc"
+monitor_mode: "max"
+val_check_interval: 1.0
+log_on_epoch: true
+
+download: true
+folds_train: [ 1, 2, 3, 4 ]
+folds_val: [ 5 ]

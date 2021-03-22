@@ -1,87 +1,48 @@
+"""
+	ESC-10 core classes and functions.
+	Developed by Léo Cances (leocances on Github).
 
-from mlu.datasets.wrappers import TransformDataset
+	Modified : Yes
+		- typing & imports
+"""
 
-from sslh.datasets.dataset_sized import DatasetSized
-from sslh.datasets.detail.esc_ds import ESC10_NoSR_Cached
-from sslh.datasets.esc50 import ESC50Builder
-from sslh.datasets.module_wrap import ModuleWrap
-
+from torch import Tensor
 from torch.nn import Module
-from typing import Callable, Dict, List, Optional
+from typing import Optional, Tuple
+
+from sslh.datasets.esc50 import ESC50Base, FOLDS, URL, cache_feature
 
 
-class ESC10Builder(ESC50Builder):
-	def __init__(self):
-		super().__init__()
-		self._esc10_idx_to_esc50_idx = {v: k for k, v in ESC10_NoSR_Cached.TARGET_MAPPER.items()}
-		self._labels_names_esc10 = {
-			index: self._labels_names[self._esc10_idx_to_esc50_idx[index]]
-			for index in range(len(self._esc10_idx_to_esc50_idx))
-		}
+class ESC10Base(ESC50Base):
+	TARGET_MAPPER = {0: 0, 1: 1, 38: 2, 40: 3, 41: 4, 10: 5, 11: 6, 12: 7, 20: 8, 21: 9}
 
-	def get_dataset_train(
+	def __init__(
 		self,
-		dataset_root: str,
-		transform: Optional[Callable] = None,
-		target_transform: Optional[Callable] = None,
-		folds: Optional[List[int]] = None,
-		download: bool = True,
-		**kwargs,
-	) -> DatasetSized:
-		if folds is None:
-			folds = self.get_folds()
-			folds = folds[:-1]
+		root: str,
+		folds: tuple = FOLDS,
+		download: bool = False,
+		transform: Optional[Module] = None
+	) -> None:
+		super().__init__(root, folds, download, transform)
 
-		return get_esc10_dataset(
-			dataset_root,
-			folds,
-			download,
-			transform,
-			target_transform,
-		)
+		self.url = URL["esc10-10"]
+		self.nb_class = 10
+		self.mapper = None  # Map the ESC-50 target to range(0, 10)
 
-	def get_dataset_val(
-		self,
-		dataset_root: str,
-		transform: Optional[Callable] = None,
-		target_transform: Optional[Callable] = None,
-		folds: Optional[List[int]] = None,
-		download: bool = True,
-		**kwargs,
-	) -> DatasetSized:
-		if folds is None:
-			folds = self.get_folds()
-			folds = folds[-1:]
+	def _load_metadata(self) -> None:
+		super()._load_metadata()
 
-		return get_esc10_dataset(
-			dataset_root,
-			folds,
-			download,
-			transform,
-			target_transform,
-		)
+		# Keep only the esc10-10 relevant files
+		self._filenames = self._filenames[self._esc10s]
+		self._targets = self._targets[self._esc10s]
 
-	def get_dataset_name(self) -> str:
-		return "ESC10"
-
-	def get_labels_names(self) -> Dict[int, str]:
-		return self._labels_names_esc10
+	def __getitem__(self, index: int) -> Tuple[Tensor, int, int]:
+		data, sampling_rate, target = super().__getitem__(index)
+		return data, sampling_rate, ESC10Base.TARGET_MAPPER[target]
 
 
-def get_esc10_dataset(
-	dataset_root: str,
-	folds: List[int],
-	download: bool = True,
-	transform: Optional[Callable] = None,
-	target_transform: Optional[Callable] = None,
-) -> DatasetSized:
-	if transform is not None and not isinstance(transform, Module):
-		transform = ModuleWrap(transform)
-
-	if not isinstance(folds, tuple):
-		folds = tuple(folds)
-
-	dataset = ESC10_NoSR_Cached(root=dataset_root, folds=folds, download=download, transform=transform)
-	if target_transform is not None:
-		dataset = TransformDataset(dataset, transform=target_transform, index=1)
-	return dataset
+class ESC10(ESC10Base):
+	@cache_feature
+	def __getitem__(self, index: int) -> Tuple[Tensor, int]:
+		x, sr, y = super().__getitem__(index)
+		return x, y

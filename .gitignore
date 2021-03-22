@@ -10,6 +10,11 @@ dist/
 old/
 results/
 tensorboard/
+lightning_logs/
+outputs/
+.hydra/
+boards/
+logs/
 
 # Folders mask
 *.egg-info/
@@ -19,9 +24,9 @@ tensorboard/
 *.err
 *.out
 *.torch
+*ign*
+.tmp*
 
 # Specific files
-.tmp_sbatch.sh
-.sbatch_*.sh
 .sbatch.sh
-*ign*
+cfg.sh

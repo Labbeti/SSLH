@@ -1,0 +1,30 @@
+# @package _global_
+defaults:
+  - dataset: esc10
+  - model: wrn28
+  - experiment: uda
+  - optim: adam
+  - path: default
+  - sched: cosine
+
+datetime: "${now:%Y-%m-%d_%H:%M:%S}"
+tag: ""
+epochs: 10
+max_it: null
+cpus: 12
+gpus: 1
+logdir: "../boards"
+seed: 1234
+bsize_s: 30
+bsize_u: 30
+ratio_s: 0.1
+ratio_u: 0.9
+
+hydra:
+  # Disable log file
+  job_logging: null
+  # Set args save in board dir
+  output_subdir: ${logdir}/${dataset.name}/${experiment.fullname}/${datetime}${tag}/.hydra
+  # Set hydra working dir
+  run:
+    dir: ./

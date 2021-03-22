@@ -1,0 +1,5 @@
+# @package _group_
+
+name: "cosine"
+fullname: "CosineScheduler"
+on_epoch: true

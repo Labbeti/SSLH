@@ -1,0 +1,5 @@
+# @package _group_
+
+name: "SoftCosine"
+fullname: "SoftCosineScheduler"
+on_epoch: true

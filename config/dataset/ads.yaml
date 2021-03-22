@@ -1,0 +1,13 @@
+# @package _group_
+
+name: "ADS"
+fullname: "AudioSet"
+num_classes: 527
+root: ${path.ads}
+monitor: "val/fscore"
+monitor_mode: "max"
+val_check_interval: 10000
+log_on_epoch: false
+
+train_subset: "unbalanced"
+nb_max_iterations: 125000

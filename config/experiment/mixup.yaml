@@ -1,0 +1,7 @@
+# @package _group_
+name: "mixup"
+fullname: "MixUp"
+criterion: "CrossEntropy"
+reduction: "mean"
+augm_train: "identity"
+alpha: 0.4

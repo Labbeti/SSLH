@@ -1,0 +1,6 @@
+# @package _group_
+name: "supervised"
+fullname: "Supervised"
+criterion: "CrossEntropy"
+reduction: "mean"
+augm_train: "identity"

@@ -1,0 +1,12 @@
+# @package _group_
+
+name: "GSC"
+fullname: "GoogleSpeechCommands"
+num_classes: 35
+root: ${path.gsc}
+monitor: "val/acc"
+monitor_mode: "max"
+val_check_interval: 1.0
+log_on_epoch: true
+
+download: true

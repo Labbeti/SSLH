@@ -1,0 +1,8 @@
+# @package _group_
+
+ads: null
+cifar10: "../data/CIFAR10"
+esc10: "../data/ESC10"
+gsc: "../data/GSC"
+pvc: "../data/PVC"
+ubs8k: null

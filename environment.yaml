@@ -1,0 +1,26 @@
+name: env_sslh
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - pytorch~=1.7.1
+  - torchaudio~=0.7.2
+  - torchvision~=0.8.2
+  - pytorch-lightning~=1.2.3
+  - pip
+  - tensorboard
+  - matplotlib
+  - numpy
+  - librosa
+  - h5py
+  - pandas
+  - tqdm
+  - pip:
+    - advertorch
+    - soundfile
+    - hydra-core~=1.0.6
+    - git+https://github.com/leocances/augmentation_utils
+    - git+https://github.com/leocances/pytorch_metrics
+    - git+https://github.com/leocances/UrbanSound8K
+    - git+https://github.com/Labbeti/MLU@dev

@@ -1,122 +1,194 @@
+"""
+	ESC-50 core classes and functions.
+	Developed by Léo Cances (leocances on Github).
 
-from argparse import Namespace
+	Modified : Yes
+		- typing & imports
+"""
 
-from mlu.datasets.utils import generate_split_samplers
-from mlu.datasets.wrappers import TransformDataset
-from mlu.nn import OneHot
+import numpy
+import os
+import torchaudio
 
-from sslh.datasets.base import DatasetBuilder
-from sslh.datasets.module_wrap import ModuleWrap
-from sslh.datasets.dataset_sized import DatasetSized
-from sslh.datasets.detail.esc_ds import ESC50_NoSR_Cached
+from torch import Tensor
+from torch.nn import Module
+from torch.utils.data.dataset import Dataset
+from torchaudio.datasets.utils import download_url, extract_archive
+from typing import Tuple
 
-from torch.nn import Sequential, Module
-from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
-from typing import Any, Callable, Dict, Optional, List
+# Download URL and checksums
+URL = {
+	"esc10-10": "https://github.com/karoldvl/ESC-50/archive/master.zip",
+	"esc10-50": "https://github.com/karoldvl/ESC-50/archive/master.zip",
+	# "esc10-us": None,
+}
+
+_CHECKSUMS = {
+	"esc10-10": None,
+	"esc10-50": None,
+	# "esc10-us": None,
+}
+
+# Constant
+ARCHIVE_BASENAME = "ESC-50-master"
+FOLDER_IN_ARCHIVE = "ESC-50-master"
+AUDIO_FOLDER = "audio"
+META_FOLDER = "meta"
+AVAILABLE_VERSION = list(URL.keys())
+
+# Default parameters
+FOLDS = (1, 2, 3, 4, 5)
 
 
-class ESC50Builder(DatasetBuilder):
-	def __init__(self):
+def cache_feature(func):
+	def decorator(*args, **kwargs):
+		key = ",".join(map(str, args))
+
+		if key not in decorator.cache:
+			decorator.cache[key] = func(*args, **kwargs)
+
+		return decorator.cache[key]
+
+	decorator.cache = dict()
+	return decorator
+
+
+class ESC50Base(Dataset):
+	"""
+	ESC wrappers
+
+	Args:
+		root (string): Root directory of wrappers where directory
+			``ESC-50-master`` exists or will be saved to if download is set to True.
+		download (bool, optional): If true, download the dataset from the internet
+			and puts it in root directory. If wrappers is already downloaded, it is
+			not downloaded again.
+	"""
+	NB_CLASS = 50
+
+	def __init__(
+		self,
+		root: str,
+		folds: tuple = FOLDS,
+		download: bool = False,
+		transform: Module = None
+	) -> None:
+
 		super().__init__()
-		labels_list = [
-			'dog', 'rooster', 'pig', 'cow', 'frog', 'cat', 'hen', 'insects', 'sheep', 'crow', 'rain', 'sea_waves',
-			'crackling_fire', 'crickets', 'chirping_birds', 'water_drops', 'wind', 'pouring_water', 'toilet_flush',
-			'thunderstorm', 'crying_baby', 'sneezing', 'clapping', 'breathing', 'coughing', 'footsteps', 'laughing',
-			'brushing_teeth', 'snoring', 'drinking_sipping', 'door_wood_knock', 'mouse_click', 'keyboard_typing',
-			'door_wood_creaks', 'can_opening', 'washing_machine', 'vacuum_cleaner', 'clock_alarm', 'clock_tick',
-			'glass_breaking', 'helicopter', 'chainsaw', 'siren', 'car_horn', 'engine', 'train', 'church_bells',
-			'airplane', 'fireworks', 'hand_saw',
-		]
-		self._labels_names = {index: name for index, name in enumerate(labels_list)}
-		self._sample_rate = 44100
-		self._n_fft = 2048
-		self._hop_length = 512
-		self._n_mels = 64
 
-	def get_dataset_train(
-		self,
-		dataset_root: str,
-		transform: Optional[Callable] = None,
-		target_transform: Optional[Callable] = None,
-		folds: Optional[List[int]] = None,
-		download: bool = True,
-		**kwargs,
-	) -> DatasetSized:
-		if folds is None:
-			folds = self.get_folds()
-			folds = folds[:-1]
+		self.root = root
+		self.required_folds = folds
+		self.transform = transform
 
-		return get_esc50_dataset(
-			dataset_root,
-			folds,
-			download,
-			transform,
-			target_transform,
-		)
+		self.url = URL["esc10-50"]
+		self.nb_class = 50
+		self.target_directory = os.path.join(self.root, FOLDER_IN_ARCHIVE)
 
-	def get_dataset_val(
-		self,
-		dataset_root: str,
-		transform: Optional[Callable] = None,
-		target_transform: Optional[Callable] = None,
-		folds: Optional[List[int]] = None,
-		download: bool = True,
-		**kwargs,
-	) -> DatasetSized:
-		if folds is None:
-			folds = self.get_folds()
-			folds = folds[-1:]
+		# Dataset must exist to continue
+		if download:
+			self.download()
+		# elif not self.check_integrity(self.target_directory):
+		#     raise RuntimeError("Dataset not found or corrupted. \n\
+		#         You can use download=True to download it.")
 
-		return get_esc50_dataset(
-			dataset_root,
-			folds,
-			download,
-			transform,
-			target_transform,
-		)
+		# Prepare the medata
+		self._filenames = []
+		self._folds = []
+		self._targets = []
+		self._esc10s = []
+		self._load_metadata()
 
-	def get_spec_transform(self) -> Optional[Callable]:
-		return Sequential(
-			MelSpectrogram(sample_rate=self._sample_rate, n_fft=self._n_fft, hop_length=self._hop_length, n_mels=self._n_mels),
-			AmplitudeToDB(),
-		)
+	def __getitem__(self, index: int) -> Tuple[Tensor, int, int]:
+		"""
+		Args:
+			index (int): Index
 
-	def get_target_transform(self, smooth: Optional[float] = None) -> Optional[Callable]:
-		return OneHot(self.get_nb_classes(), smooth)
+		Returns:
+			tuple: (raw_audio, sr, target).
+		"""
+		data, sampling_rate, target = self.load_item(index)
 
-	def get_dataset_name(self) -> str:
-		return "ESC50"
+		if self.transform is not None:
+			data = self.transform(data)
 
-	def get_data_type(self) -> str:
-		return "audio"
+		return data, sampling_rate, target
 
-	def get_target_type(self) -> str:
-		return "monolabel"
+	def __len__(self) -> int:
+		return len(self._filenames)
 
-	def get_labels_names(self) -> Dict[int, str]:
-		return self._labels_names
+	def _load_metadata(self) -> None:
+		"""Read the metadata csv file and gather the information needed."""
+		# HEADER COLUMN NUMBER
+		c_filename = 0
+		c_fold = 1
+		c_target = 2
+		c_esc10 = 4
 
-	def get_folds(self) -> Optional[List[int]]:
-		return list(range(1, 6))
+		self._filenames = []
+		self._folds = []
+		self._targets = []
+		self._esc10s = []
 
-	def has_evaluation(self) -> bool:
-		return False
+		# Read the csv file and remove header
+		path = os.path.join(self.target_directory, META_FOLDER, "esc50.csv")
+		with open(path, "r") as fp:
+			data = fp.read().splitlines()[1:]
+
+			for line in data:
+				items = line.split(",")
+
+				self._filenames.append(items[c_filename])
+				self._folds.append(int(items[c_fold]))
+				self._targets.append(int(items[c_target]))
+				self._esc10s.append(eval(items[c_esc10]))
+
+		self._filenames = numpy.asarray(self._filenames)
+		self._folds = numpy.asarray(self._folds)
+		self._targets = numpy.asarray(self._targets)
+		self._esc10s = numpy.asarray(self._esc10s)
+
+		# Keep only the required folds
+		folds_mask = sum([self._folds == f for f in self.required_folds]) >= 1
+
+		self._filenames = self._filenames[folds_mask]
+		self._targets = self._targets[folds_mask]
+		self._esc10s = self._esc10s[folds_mask]
+
+	def download(self) -> None:
+		"""Download the dataset and extract the archive"""
+		if self.check_integrity(self.target_directory):
+			print("Dataset already downloaded and verified.")
+
+		else:
+			archive_path = os.path.join(self.root, FOLDER_IN_ARCHIVE + ".zip")
+
+			download_url(self.url, self.root)
+			extract_archive(archive_path, self.root)
+
+	def check_integrity(self, path, checksum=None) -> bool:
+		"""Check if the dataset already exist and if yes, if it is not corrupted.
+
+		Returns:
+			bool: False if the dataset doesn't exist or if it is corrupted.
+		"""
+		if not os.path.isdir(path):
+			return False
+
+		# TODO add checksum verification
+		return True
+
+	def load_item(self, index: int) -> Tuple[Tensor, int, int]:
+		filename = self._filenames[index]
+		target = self._targets[index]
+
+		path = os.path.join(self.target_directory, AUDIO_FOLDER, filename)
+		waveform, sample_rate = torchaudio.load(path)
+
+		return waveform, sample_rate, target
 
 
-def get_esc50_dataset(
-	dataset_root: str,
-	folds: List[int],
-	download: bool = True,
-	transform: Optional[Callable] = None,
-	target_transform: Optional[Callable] = None,
-) -> DatasetSized:
-	if transform is not None and not isinstance(transform, Module):
-		transform = ModuleWrap(transform)
-
-	if not isinstance(folds, tuple):
-		folds = tuple(folds)
-
-	dataset = ESC50_NoSR_Cached(root=dataset_root, folds=folds, download=download, transform=transform)
-	if target_transform is not None:
-		dataset = TransformDataset(dataset, transform=target_transform, index=1)
-	return dataset
+class ESC50(ESC50Base):
+	@cache_feature
+	def __getitem__(self, index: int) -> Tuple[Tensor, int]:
+		x, sr, y = super().__getitem__(index)
+		return x, y
