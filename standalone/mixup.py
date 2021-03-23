@@ -11,28 +11,17 @@ from mlu.metrics import MetricDict
 from mlu.utils.misc import reset_seed
 
 from sslh.callbacks import LogLRCallback
-from sslh.datamodules.fully_supervised import (
-	ADSFullyDataModule,
-	CIFAR10FullyDataModule,
-	ESC10FullyDataModule,
-	GSCFullyDataModule,
-	PVCFullyDataModule,
-	UBS8KFullyDataModule,
-)
-from sslh.datamodules.partial_supervised import (
-	ADSPartialDataModule,
-	CIFAR10PartialDataModule,
-	ESC10PartialDataModule,
-	GSCPartialDataModule,
-	PVCPartialDataModule,
-	UBS8KPartialDataModule,
-)
-from sslh.experiments import MixUp
+from sslh.datamodules.fully_supervised import get_fully_datamodule_from_cfg
+from sslh.datamodules.partial_supervised import get_partial_datamodule_from_cfg
+from sslh.experiments.mixup import MixUp
 from sslh.metrics import get_metrics
 from sslh.models import get_model_from_cfg
 from sslh.transforms import get_transform, get_target_transform
 from sslh.utils.get_from_name import (
-	get_criterion_from_name, get_activation_from_name, get_optimizer_from_name, get_scheduler_from_name
+	get_activation_from_name,
+	get_criterion_from_name,
+	get_optimizer_from_name,
+	get_scheduler_from_name,
 )
 from sslh.utils.test_stack_module import TestStackModule
 
@@ -48,104 +37,10 @@ def main(cfg: DictConfig):
 	target_transform = get_target_transform(cfg.dataset.name)
 
 	# Build datamodule
-	datamodule_params = dict(
-		dataset_root=cfg.dataset.root,
-		transform_train=transform_train,
-		transform_val=transform_val,
-		target_transform=target_transform,
-		bsize=cfg.bsize,
-		num_workers=cfg.cpus,
-		drop_last=False,
-		pin_memory=False,
-	)
-
 	if cfg.ratio >= 1.0:
-		if cfg.dataset.name == "ADS":
-			datamodule = ADSFullyDataModule(
-				**datamodule_params,
-				train_subset=cfg.dataset.train_subset,
-				nb_train_steps=cfg.dataset.nb_train_steps,
-			)
-		elif cfg.dataset.name == "CIFAR10":
-			datamodule = CIFAR10FullyDataModule(
-				**datamodule_params,
-				download_dataset=cfg.dataset.download,
-			)
-		elif cfg.dataset.name == "ESC10":
-			datamodule = ESC10FullyDataModule(
-				**datamodule_params,
-				download_dataset=cfg.dataset.download,
-				folds_train=cfg.dataset.folds_train,
-				folds_val=cfg.dataset.folds_val,
-			)
-		elif cfg.dataset.name == "GSC":
-			datamodule = GSCFullyDataModule(
-				**datamodule_params,
-				download_dataset=cfg.dataset.download,
-			)
-		elif cfg.dataset.name == "PVC":
-			datamodule = PVCFullyDataModule(
-				**datamodule_params,
-				nb_train_steps=cfg.dataset.nb_train_steps,
-			)
-		elif cfg.dataset.name == "UBS8K":
-			datamodule = UBS8KFullyDataModule(
-				**datamodule_params,
-				folds_train=cfg.dataset.folds_train,
-				folds_val=cfg.dataset.folds_val,
-			)
-		else:
-			raise RuntimeError(
-				f"Unknown dataset name '{cfg.dataset.name}'. "
-				f"Must be one of {('ADS', 'CIFAR10', 'ESC10', 'GSC', 'PVC', 'UBS8K')}."
-			)
-
+		datamodule = get_fully_datamodule_from_cfg(cfg, transform_train, transform_val, target_transform)
 	else:
-		if cfg.dataset.name == "ADS":
-			datamodule = ADSPartialDataModule(
-				**datamodule_params,
-				ratio=cfg.ratio,
-				train_subset=cfg.dataset.train_subset,
-				nb_train_steps=cfg.dataset.nb_train_steps,
-			)
-		elif cfg.dataset.name == "CIFAR10":
-			datamodule = CIFAR10PartialDataModule(
-				**datamodule_params,
-				ratio=cfg.ratio,
-				download_dataset=cfg.dataset.download,
-			)
-		elif cfg.dataset.name == "ESC10":
-			datamodule = ESC10PartialDataModule(
-				**datamodule_params,
-				ratio=cfg.ratio,
-				download_dataset=cfg.dataset.download,
-				folds_train=cfg.dataset.folds_train,
-				folds_val=cfg.dataset.folds_val
-			)
-		elif cfg.dataset.name == "GSC":
-			datamodule = GSCPartialDataModule(
-				**datamodule_params,
-				ratio=cfg.ratio,
-				download_dataset=cfg.dataset.download,
-			)
-		elif cfg.dataset.name == "PVC":
-			datamodule = PVCPartialDataModule(
-				**datamodule_params,
-				ratio=cfg.ratio,
-				nb_train_steps=cfg.dataset.nb_train_steps,
-			)
-		elif cfg.dataset.name == "UBS8K":
-			datamodule = UBS8KPartialDataModule(
-				**datamodule_params,
-				ratio=cfg.ratio,
-				folds_train=cfg.dataset.folds_train,
-				folds_val=cfg.dataset.folds_val,
-			)
-		else:
-			raise RuntimeError(
-				f"Unknown dataset name '{cfg.dataset.name}'. "
-				f"Must be one of {('ADS', 'CIFAR10', 'ESC10', 'GSC', 'PVC', 'UBS8K')}."
-			)
+		datamodule = get_partial_datamodule_from_cfg(cfg, transform_train, transform_val, target_transform)
 
 	# Build model
 	model = get_model_from_cfg(cfg)

@@ -1,5 +1,7 @@
 # @package _group_
 
+logdir: "../boards"
+
 ads: "/projets/samova/leocances/AudioSet/hdfs"
 cifar10: "/projets/samova/elabbe/corpus/CIFAR10"
 esc10: "/projets/samova/elabbe/corpus/ESC10"

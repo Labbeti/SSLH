@@ -1,5 +1,7 @@
 # @package _group_
 
+logdir: "../boards"
+
 ads: "/tmpdir/cances/corpus/AudioSet/hdfs"
 cifar10: "/tmpdir/labbe/corpus/CIFAR10"
 esc10: "/tmpdir/labbe/corpus/ESC10"

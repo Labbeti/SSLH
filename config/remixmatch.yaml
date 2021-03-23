@@ -8,13 +8,13 @@ defaults:
   - sched: cosine
 
 datetime: "${now:%Y-%m-%d_%H:%M:%S}"
+seed: 1234
 tag: ""
 epochs: 10
 max_it: null
 cpus: 12
 gpus: 1
-logdir: "../boards"
-seed: 1234
+logdir: ${path.logdir}
 bsize_s: 30
 bsize_u: 30
 ratio_s: 0.1

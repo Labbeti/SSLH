@@ -79,7 +79,10 @@ class FixMatchMixUp(FixMatch):
 		loss = loss_s + self.lambda_u * loss_u
 
 		with torch.no_grad():
-			self.log_dict({"train/loss": loss, "train/loss_s": loss_s, "train/loss_u": loss_u}, **self.log_params)
+			self.log_dict(
+				{"train/loss": loss, "train/loss_s": loss_s, "train/loss_u": loss_u, "train/mask": mask.mean()},
+				**self.log_params
+			)
 
 			pred_xs_weak = self.activation(self.model(xs_weak))
 			scores_s = self.metric_dict_train_s(pred_xs_weak, ys)

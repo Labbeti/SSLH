@@ -11,7 +11,7 @@ epochs=300
 optim="adam"
 lr=1e-3
 sched="cosine"
-tag_prefix="_interspeech"
+tag_prefix="_interspeech_v2"
 
 common_params="$run epochs=$epochs optim=$optim optim.lr=$lr sched=$sched"
 
@@ -30,9 +30,9 @@ model="wrn28"
 modelrot="wrn28rot"
 tag="${tag_prefix}_${model}"
 
-./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag=$tag ratio=0.1
+./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag="${tag}_10%" ratio=0.1
 
-./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag=$tag
+./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag="${tag}_100%"
 
 ./fixmatch.sh $common_params $dataset_params model=$model bsize_s=$bsize_s bsize_u=$bsize_u tag=$tag
 
@@ -49,9 +49,9 @@ model="mnv2"
 modelrot="mnv2rot"
 tag="${tag_prefix}_${model}"
 
-./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag=$tag ratio=0.1
+./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag="${tag}_10%" ratio=0.1
 
-./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag=$tag
+./mixup.sh $common_params $dataset_params model=$model bsize=$bsize experiment.augm_train=weak tag="${tag}_100%"
 
 ./fixmatch.sh $common_params $dataset_params model=$model bsize_s=$bsize_s bsize_u=$bsize_u tag=$tag
 

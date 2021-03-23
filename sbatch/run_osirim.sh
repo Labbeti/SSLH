@@ -11,6 +11,7 @@ fi
 
 cpus=`./get_param.sh "cpus" "10" $@`
 gpus=`./get_param.sh "gpus" "2" $@`
+tag=`./get_param.sh "tag" "" $@`
 dataset=`./get_param.sh "dataset" "esc10" $@`
 dataset=`echo $dataset | tr a-z A-Z`
 
@@ -23,10 +24,10 @@ fpath_python="${dpath_conda}/envs/${conda_env}/bin/python"
 dpath_standalone="${dpath_project}/standalone"
 fpath_script="${dpath_standalone}/${fname_script}"
 
-job_name="${fname_script}"
+job_name="`basename ${fname_script} .py`"
 dpath_log="${dpath_project}/logs/${dataset}"
-fpath_out="${dpath_log}/${dataset}_${job_name}_%j.out"
-fpath_err="${dpath_log}/${dataset}_${job_name}_%j.err"
+fpath_out="${dpath_log}/${dataset}_${job_name}_${tag}_%j.out"
+fpath_err="${dpath_log}/${dataset}_${job_name}_${tag}_%j.err"
 fpath_singularity="/logiciels/containerCollections/CUDA10/pytorch.sif"
 srun="srun singularity exec ${fpath_singularity}"
 

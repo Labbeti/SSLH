@@ -1,5 +1,7 @@
 # @package _group_
 
+logdir: "../boards"
+
 ads: null
 cifar10: "../data/CIFAR10"
 esc10: "../data/ESC10"
