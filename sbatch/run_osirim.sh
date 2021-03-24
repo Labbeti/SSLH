@@ -9,8 +9,8 @@ if [ "$path" = "NOT_FOUND" ]; then
   script_params="$script_params path=$path"
 fi
 
-cpus=`./get_param.sh "cpus" "10" $@`
-gpus=`./get_param.sh "gpus" "2" $@`
+cpus=`./get_param.sh "cpus" "5" $@`
+gpus=`./get_param.sh "gpus" "1" $@`
 tag=`./get_param.sh "tag" "" $@`
 dataset=`./get_param.sh "dataset" "esc10" $@`
 dataset=`echo $dataset | tr a-z A-Z`

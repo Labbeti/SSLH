@@ -201,7 +201,7 @@ def mean_teacher(
 	print('s_idx: ', len(s_idx))
 	print('u_idx: ', len(u_idx))
 
-	sampler_s = IterationBalancedSampler(train_dataset, s_idx, shuffle=True)
+	sampler_s = IterationBalancedSampler(train_dataset, s_idx, len(s_idx), shuffle=True)
 	#     sampler_s = SubsetRandomSampler(s_idx)
 	sampler_u = InfiniteSampler(u_idx, shuffle=True)
 

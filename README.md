@@ -30,6 +30,7 @@ The project contains also a ```environment.yaml``` and ```requirements.txt``` fo
 - With **conda** environment :
 ```bash
 conda create -n env_sslh -f environment.yaml
+conda activate env_sslh
 pip install -e . --no-dependencies
 ```
 
@@ -42,7 +43,7 @@ pip install -e . --no-dependencies
 ## Datasets
 CIFAR10, ESC10 and GoogleSpeechCommands are automatically downloaded and installed.
 For UrbanSound8k, please read the [README of leocances](https://github.com/leocances/UrbanSound8K/blob/master/README.md#prepare-the-dataset), in section "Prepare the dataset". 
-AudioSet (ADS) and Primate Vocalize Corpus (PVC) cannot be installed automatically for now.
+AudioSet (ADS) and Primate Vocalize Corpus (PVC) cannot be installed automatically by now.
 
 [comment]: <> (TODO : For Audioset install !)
 [comment]: <> (TODO : For PVC install !)
@@ -61,20 +62,21 @@ standalone
 
 The code use Hydra for parsing args. The syntax of an argument is "name=value" instead of "--name value".
 
-Example : MixMatch on ESC10
+Example 1 : MixMatch on ESC10
 ```bash
 python mixmatch.py dataset=esc10
 ```
 
-Example : Supervised+Weak on GSC
+Example 2 : Supervised+Weak on GSC
 ```bash
 python supervised.py dataset=gsc experiment.augm_train=weak bsize=256 epochs=300
 ```
 
-Example : FixMatch+MixUp on UBS8K
+Example 3 : FixMatch+MixUp on UBS8K
 ```bash
 python fixmatch.py dataset=ubs8K dataset.root="../data/UBS8K" experiment=fixmatch_mixup bsize_s=128 bsize_u=128 epochs=300
 ```
+(note: default folds used are in "config/dataset/ubs8k.yaml")
 
 ## Package overview
 ```
@@ -114,19 +116,17 @@ It contains also some code from the following authors :
 - This project has been made with Ubuntu 20.04 and Python 3.8.5.
 
 ## Glossary
-| Acronym | Word |
+| Acronym | Description |
 | --- | --- |
-| ABC | Abstract Class |
-| activation | Activation Function |
-| ADS | AudioSet |
+| activation | Activation function |
+| ADS | AudioSet dataset |
 | aug, augm, augment | Augmentation |
 | ce | Cross-Entropy |
-| ds | Dataset |
 | exp | Experimental |
 | fm | FixMatch |
 | fn, func | Function |
-| GSC | Google Speech Commands (with 35 classes) |
-| GSC12 | Google Speech Commands (with 10 classes from GSC, 1 unknown class and 1 silence class) |
+| GSC | Google Speech Commands dataset (with 35 classes) |
+| GSC12 | Google Speech Commands dataset (with 10 classes from GSC, 1 unknown class and 1 silence class) |
 | hparams | Hyperparameters |
 | js | Jensen-Shannon |
 | kl | Kullback-Leibler |
@@ -134,11 +134,11 @@ It contains also some code from the following authors :
 | lr | Learning Rate |
 | mm | MixMatch |
 | mse | Mean Squared Error |
-| optim | Optimizer |
 | pred | Prediction |
+| PVC | Primate Vocalize Corpus dataset |
 | rmm | ReMixMatch |
-| s | Supervised |
+| _s | Supervised |
 | sched | Scheduler |
 | SSL | Semi-Supervised Learning |
-| u | Unsupervised |
-| UBS8K | UrbanSound8K |
+| _u | Unsupervised |
+| UBS8K | UrbanSound8K dataset |

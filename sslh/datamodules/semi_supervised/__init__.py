@@ -23,7 +23,7 @@ def get_semi_datamodule_from_cfg(
 
 		:param cfg: The hydra config.
 		:param transform_train_s: The transform to apply to train supervised (labeled) data.
-		:param transform_train_s: The transform to apply to train unsupervised (unlabeled) data.
+		:param transform_train_u: The transform to apply to train unsupervised (unlabeled) data.
 		:param transform_val: The transform to apply to validation and test data.
 		:param target_transform: The transform to apply to train, validation and test targets.
 		:return: The LightningDataModule build from config and transforms.

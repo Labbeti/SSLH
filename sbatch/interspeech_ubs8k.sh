@@ -13,7 +13,7 @@ lr=1e-3
 sched="cosine"
 tag_prefix="_interspeech_v2"
 
-common_params="$run epochs=$epochs optim=$optim optim.lr=$lr sched=$sched"
+common_params="${run} epochs=${epochs} optim=${optim} optim.lr=${lr} sched=${sched}"
 
 # Other non-common params
 bsize=256
@@ -26,7 +26,7 @@ dataset="ubs8k"
 for fold_val in 1 2 3 4 5 6 7 8 9 10
 do
 
-dataset_params="dataset=$dataset dataset.folds_val=[$fold_val] dataset.folds_train=null"
+dataset_params="dataset=${dataset} dataset.folds_val=[${fold_val}] dataset.folds_train=null"
 
 # - WideResNet28 & WideResNet28Rot
 model="wrn28"

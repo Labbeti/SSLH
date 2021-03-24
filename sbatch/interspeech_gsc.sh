@@ -13,7 +13,7 @@ lr=1e-3
 sched="cosine"
 tag_prefix="_interspeech_v2"
 
-common_params="$run epochs=$epochs optim=$optim optim.lr=$lr sched=$sched"
+common_params="${run} epochs=${epochs} optim=${optim} optim.lr=${lr} sched=${sched}"
 
 # Other non-common params
 bsize=256
@@ -23,7 +23,7 @@ bsize_u=128
 # -- GSC
 dataset="gsc"
 
-dataset_params="dataset=$dataset"
+dataset_params="dataset=${dataset}"
 
 # - WideResNet28 & WideResNet28Rot
 model="wrn28"

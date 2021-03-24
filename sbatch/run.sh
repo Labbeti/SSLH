@@ -18,3 +18,5 @@ fpath_script="${dpath_standalone}/${fname_script}"
 
 echo "Run script '${fname_script}'"
 ${fpath_python} ${fpath_script} ${script_params}
+
+exit 0

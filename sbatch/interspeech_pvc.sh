@@ -13,7 +13,7 @@ lr=1e-3
 sched="cosine"
 tag_prefix="_interspeech_v2"
 
-common_params="$run epochs=$epochs optim=$optim optim.lr=$lr sched=$sched"
+common_params="${run} epochs=${epochs} optim=${optim} optim.lr=${lr} sched=${sched}"
 
 # Other non-common params
 bsize=256
@@ -25,7 +25,7 @@ dataset="pvc"
 nb_train_steps=50000
 sched_on_epoch=false
 
-dataset_params="dataset=$dataset dataset.nb_train_steps=$nb_train_steps sched.on_epoch=$sched_on_epoch"
+dataset_params="dataset=${dataset} dataset.nb_train_steps=${nb_train_steps} sched.on_epoch=${sched_on_epoch}"
 
 # - WideResNet28 & WideResNet28Rot
 model="wrn28"
