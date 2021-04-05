@@ -5,7 +5,7 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch.nn import Module, Softmax
 from torch.optim.optimizer import Optimizer
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn import CrossEntropyWithVectors
@@ -17,13 +17,13 @@ class MixUp(LightningModule):
 		self,
 		model: Module,
 		optimizer: Optimizer,
-		activation: Callable = Softmax(dim=-1),
+		activation: Module = Softmax(dim=-1),
 		criterion: Module = CrossEntropyWithVectors(reduction="mean"),
+		alpha: float = 0.4,
 		metric_dict_train: Optional[MetricDict] = None,
 		metric_dict_val: Optional[MetricDict] = None,
 		metric_dict_test: Optional[MetricDict] = None,
 		log_on_epoch: bool = True,
-		alpha: float = 0.4,
 	):
 		if metric_dict_train is None:
 			metric_dict_train = MetricDict()
@@ -36,16 +36,23 @@ class MixUp(LightningModule):
 		self.model = model
 		self.activation = activation
 		self.optimizer = optimizer
+		self.criterion = criterion
+		self.alpha = alpha
 		self.metric_dict_train = metric_dict_train
 		self.metric_dict_val = metric_dict_val
 		self.metric_dict_test = metric_dict_test
-		self.criterion = criterion
-		self.alpha = alpha
 
 		self.mixup = MixUpModule(alpha=alpha, apply_max=False)
 
 		self.log_params = dict(on_epoch=log_on_epoch, on_step=not log_on_epoch)
-		self.save_hyperparameters("alpha")
+		self.save_hyperparameters({
+			"experiment": self.__class__.__name__,
+			"model": model.__class__.__name__,
+			"activation": activation.__class__.__name__,
+			"optimizer": optimizer.__class__.__name__,
+			"criterion": criterion.__class__.__name__,
+			"alpha": alpha,
+		})
 
 	def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> Tensor:
 		xs, ys = batch
@@ -55,7 +62,7 @@ class MixUp(LightningModule):
 			xs_shuffle = xs[indexes]
 			ys_shuffle = ys[indexes]
 
-			xs_mix, ys_mix = self.mixup(xs, xs_shuffle, ys, ys_shuffle)
+			xs_mix, _ys_mix = self.mixup(xs, xs_shuffle, ys, ys_shuffle)
 			lambda_ = self.mixup.get_last_lambda()
 
 		pred_xs_mix = self.activation(self.model(xs_mix))
@@ -64,7 +71,7 @@ class MixUp(LightningModule):
 		with torch.no_grad():
 			self.log_dict({"train/loss": loss}, **self.log_params)
 
-			scores = self.metric_dict_train(self.model(xs), ys)
+			scores = self.metric_dict_train(self.activation(self.model(xs)), ys)
 			self.log_dict(scores, **self.log_params)
 
 		return loss

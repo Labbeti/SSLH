@@ -5,7 +5,7 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch.nn import Module, Softmax
 from torch.optim.optimizer import Optimizer
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn import CrossEntropyWithVectors
@@ -16,7 +16,7 @@ class Supervised(LightningModule):
 		self,
 		model: Module,
 		optimizer: Optimizer,
-		activation: Callable = Softmax(dim=-1),
+		activation: Module = Softmax(dim=-1),
 		criterion: Module = CrossEntropyWithVectors(reduction="none"),
 		metric_dict_train: Optional[MetricDict] = None,
 		metric_dict_val: Optional[MetricDict] = None,
@@ -40,6 +40,14 @@ class Supervised(LightningModule):
 		self.metric_dict_test = metric_dict_test
 
 		self.log_params = dict(on_epoch=log_on_epoch, on_step=not log_on_epoch)
+
+		self.save_hyperparameters({
+			"experiment": self.__class__.__name__,
+			"model": model.__class__.__name__,
+			"activation": activation.__class__.__name__,
+			"optimizer": optimizer.__class__.__name__,
+			"criterion": criterion.__class__.__name__,
+		})
 
 	def training_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> Tensor:
 		xs, ys = batch

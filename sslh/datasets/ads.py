@@ -18,7 +18,6 @@ import tqdm
 from tqdm import trange
 from torch import Tensor
 from torch.nn import Module
-from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.sampler import Sampler
 from typing import Any, Dict, Iterable, List, Optional, Tuple
@@ -36,7 +35,7 @@ class Audioset(Dataset):
 		verbose: bool = False,
 	):
 		"""
-		A pytorch dataset of Google AUdioset.
+		A pytorch dataset of Google Audioset.
 
 		Args:
 			root (str): The directory that contain the HDF files.
@@ -100,10 +99,10 @@ class Audioset(Dataset):
 		targets_path = os.path.join(self.hdf_root, "targets.npy")
 
 		if not os.path.isfile(audioname_path):
-			raise RuntimeError(f"Audioname standalone_old file doesn't exist. Please create it. (audioname_path={audioname_path})")
+			raise RuntimeError(f"Audioname standalone file doesn't exist. Please create it. (audioname_path={audioname_path})")
 
 		if not os.path.isfile(targets_path):
-			raise RuntimeError("Targets standalone_old file doesn't exist. Please create it. (targets_path={targets_path})")
+			raise RuntimeError(f"Targets standalone file doesn't exist. Please create it. (targets_path={targets_path})")
 
 	# TODO add verification for HDF files
 	# total number of row
@@ -115,11 +114,11 @@ class Audioset(Dataset):
 		it will not be taken into consideration.""
 		"""
 
-		def get_chunk_valid_stat(hdf_file: h5py.File):
-			nb_row = len(hdf_file["audio_name"])
-			chunk_size = hdf_file["audio_name"].chunks[0]
+		def get_chunk_valid_stat(hdf_file_: h5py.File):
+			nb_row_ = len(hdf_file_["audio_name"])
+			chunk_size = hdf_file_["audio_name"].chunks[0]
 
-			nb_valid_chunk = nb_row // chunk_size
+			nb_valid_chunk = nb_row_ // chunk_size
 			nb_valid_row = nb_valid_chunk * chunk_size
 
 			return nb_valid_row, nb_valid_chunk
@@ -307,6 +306,7 @@ class SingleBalancedSampler(Sampler):
 		if self.verbose:
 			print('Sort the classes')
 		class_indexes = [[] for _ in range(527)]
+		class_indexes: List[List[int]]
 
 		for sample_idx, target in zip(self.index_list, self.all_targets):
 			target_idx = np.where(target == 1)[0]
@@ -660,74 +660,76 @@ class BatchSamplerFromList(Sampler):
 		return len(self.batches)
 
 
-def get_supervised(version: str = "unbalanced", **kwargs):
-	def supervised(
-			dataset_root: str,
-			rdcc_nbytes: int = 512 * 1024 ** 2,
-			data_shape: tuple = (64, 500,),
-			data_key: str = "data",
-
-			train_transform: Module = None,
-			val_transform: Module = None,
-
-			batch_size: int = 64,
-			supervised_ratio: float = 1.0,
-			unsupervised_ratio: float = None,
-			balance: bool = True,
-
-			num_workers: int = 10,
-			pin_memory: bool = False,
-
-			**kwargs) -> Tuple[DataLoader, DataLoader]:
-
-		# Dataset parameters
-		d_params = dict(
-			root=os.path.join(dataset_root, "AudioSet/hdfs/mel_64x500"),
-			rdcc_nbytes=rdcc_nbytes,
-			data_shape=data_shape,
-			data_key=data_key,
-		)
-
-		# Dataloader parameters
-		l_params = dict(
-			num_workers=num_workers,
-			pin_memory=pin_memory,
-		)
-
-		# validation subset
-		val_dataset = SingleAudioset(**d_params, version="eval", transform=val_transform)
-		#         val_indexes = list(range(len(val_dataset)))
-		#         val_sampler = SingleBalancedSampler(val_dataset, val_indexes, shuffle=True)
-		val_loader = DataLoader(val_dataset, batch_size=batch_size, **l_params)
-
-		# Training subset
-		train_dataset = SingleAudioset(**d_params, version=version, transform=train_transform)
-
-		if supervised_ratio == 1.0:
-			train_indexes = list(range(len(train_dataset)))
-			train_sampler = SingleBalancedSampler(train_dataset, train_indexes, 100000, shuffle=True)
-			s_train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler, **l_params)
-
-		else:
-			if unsupervised_ratio is None:
-				unsupervised_ratio = 1 - supervised_ratio
-
-			s_indexes, u_indexes = class_balance_split(
-				train_dataset,
-				supervised_ratio=supervised_ratio,
-				unsupervised_ratio=unsupervised_ratio,
-				batch_size=batch_size,
-				verbose=True
-			)
-
-			s_batch_sampler = SingleBalancedSampler(train_dataset, s_indexes, 100000, shuffle=True)
-			u_batch_sampler = SingleBalancedSampler(train_dataset, u_indexes, 100000, shuffle=True)
-
-			s_train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=s_batch_sampler, **l_params)
-			u_train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=u_batch_sampler, **l_params)
-
-		#             train_loader = ZipCycle([s_train_loader, u_train_loader])
-
-		return s_train_loader, val_loader
-
-	return supervised
+# Supervised Dataloaders build example :
+# def get_supervised(version: str = "unbalanced", **kwargs):
+# 	def supervised(
+# 			dataset_root: str,
+# 			rdcc_nbytes: int = 512 * 1024 ** 2,
+# 			data_shape: tuple = (64, 500,),
+# 			data_key: str = "data",
+#
+# 			train_transform: Module = None,
+# 			val_transform: Module = None,
+#
+# 			batch_size: int = 64,
+# 			supervised_ratio: float = 1.0,
+# 			unsupervised_ratio: float = None,
+# 			balance: bool = True,
+#
+# 			num_workers: int = 10,
+# 			pin_memory: bool = False,
+#
+# 			**kwargs
+# 	) -> Tuple[DataLoader, DataLoader]:
+#
+# 		# Dataset parameters
+# 		d_params = dict(
+# 			root=os.path.join(dataset_root, "AudioSet/hdfs/mel_64x500"),
+# 			rdcc_nbytes=rdcc_nbytes,
+# 			data_shape=data_shape,
+# 			data_key=data_key,
+# 		)
+#
+# 		# Dataloader parameters
+# 		l_params = dict(
+# 			num_workers=num_workers,
+# 			pin_memory=pin_memory,
+# 		)
+#
+# 		# validation subset
+# 		val_dataset = SingleAudioset(**d_params, version="eval", transform=val_transform)
+# 		#         val_indexes = list(range(len(val_dataset)))
+# 		#         val_sampler = SingleBalancedSampler(val_dataset, val_indexes, shuffle=True)
+# 		val_loader = DataLoader(val_dataset, batch_size=batch_size, **l_params)
+#
+# 		# Training subset
+# 		train_dataset = SingleAudioset(**d_params, version=version, transform=train_transform)
+#
+# 		if supervised_ratio == 1.0:
+# 			train_indexes = list(range(len(train_dataset)))
+# 			train_sampler = SingleBalancedSampler(train_dataset, train_indexes, 100000, shuffle=True)
+# 			s_train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=train_sampler, **l_params)
+#
+# 		else:
+# 			if unsupervised_ratio is None:
+# 				unsupervised_ratio = 1 - supervised_ratio
+#
+# 			s_indexes, u_indexes = class_balance_split(
+# 				train_dataset,
+# 				supervised_ratio=supervised_ratio,
+# 				unsupervised_ratio=unsupervised_ratio,
+# 				batch_size=batch_size,
+# 				verbose=True
+# 			)
+#
+# 			s_batch_sampler = SingleBalancedSampler(train_dataset, s_indexes, 100000, shuffle=True)
+# 			u_batch_sampler = SingleBalancedSampler(train_dataset, u_indexes, 100000, shuffle=True)
+#
+# 			s_train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=s_batch_sampler, **l_params)
+# 			u_train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=u_batch_sampler, **l_params)
+#
+# 		#             train_loader = ZipCycle([s_train_loader, u_train_loader])
+#
+# 		return s_train_loader, val_loader
+#
+# 	return supervised

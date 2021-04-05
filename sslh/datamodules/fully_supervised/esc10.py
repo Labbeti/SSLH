@@ -27,6 +27,29 @@ class ESC10FullyDataModule(LightningDataModule):
 		folds_train: Optional[List[int]] = None,
 		folds_val: Optional[List[int]] = None,
 	):
+		"""
+			LightningDataModule of ESC-10 for fully supervised trainings.
+
+			:param dataset_root: The root path of the dataset.
+			:param transform_train: The optional transform to apply to train data. (default: None)
+			:param transform_val: The optional transform to apply to validation data. (default: None)
+			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
+			:param bsize: The batch size used for training and validation. (default: 30)
+			:param num_workers: The number of workers for each dataloader. (default: 4)
+			:param drop_last: If True, drop the last incomplete batch. (default: False)
+			:param pin_memory: If True, pin the memory of dataloader. (default: False)
+			:param download_dataset: If True, automatically download the dataset in the root directory. (default: True)
+			:param folds_train: The folds used for training.
+				If None and folds_val is not None, then use the unused folds of validation.
+				If both folds_train and folds_val are None, then the default folds are used:
+					[1, 2, 3, 4] for folds_train and [5] for folds_val.
+				(default: None)
+			:param folds_val: The folds used for validation.
+				If None and folds_train is not None, then use the unused folds of training.
+				If both folds_train and folds_val are None, then the default folds are used:
+					[1, 2, 3, 4] for folds_train and [5] for folds_val.
+				(default: None)
+		"""
 		super().__init__()
 		self.dataset_root = dataset_root
 		self.transform_train = transform_train

@@ -3,7 +3,7 @@ name: "uda_mixup"
 fullname: "UDA+MixUp"
 criterion_s: "CrossEntropy"
 criterion_u: "CrossEntropy"
-reduction: "mean"
+reduction: "none"
 augm_strong: "strong"
 lambda_u: 1.0
 threshold: 0.8

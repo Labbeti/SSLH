@@ -18,12 +18,30 @@ class PVCPartialDataModule(LightningDataModule):
 		transform_val: Optional[Callable] = None,
 		target_transform: Optional[Callable] = None,
 		bsize: int = 256,
-		num_workers: int = 5,
+		num_workers: int = 4,
 		drop_last: bool = False,
 		pin_memory: bool = False,
 		ratio: float = 0.1,
-		nb_train_steps: Optional[int] = None,
+		nb_train_steps: Optional[int] = 50000,
 	):
+		"""
+			LightningDataModule of Primate Vocalization Corpus (PVC) for partial supervised trainings.
+
+			Note: The subset of the dataset has the same class distribution.
+
+			:param dataset_root: The root path of the dataset.
+			:param transform_train: The optional transform to apply to train data. (default: None)
+			:param transform_val: The optional transform to apply to validation data. (default: None)
+			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
+			:param bsize: The batch size used for training and validation. (default: 30)
+			:param num_workers: The number of workers for each dataloader. (default: 4)
+			:param drop_last: If True, drop the last incomplete batch. (default: False)
+			:param pin_memory: If True, pin the memory of dataloader. (default: False)
+			:param ratio: The ratio of the subset len in [0, 1]. (default: 0.1)
+			:param nb_train_steps: The number of train steps for PVC.
+				If None, the number will be set to the number of train labeled data.
+				(default: 50000)
+		"""
 		super().__init__()
 		self.dataset_root = dataset_root
 		self.transform_train = transform_train

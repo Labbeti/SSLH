@@ -1,0 +1,8 @@
+# @package _group_
+name: "mean_teacher"
+fullname: "MeanTeacher"
+criterion_s: "CrossEntropy"
+criterion_ccost: "MSE"
+reduction: "mean"
+decay: 0.999
+lambda_ccost: 1.0

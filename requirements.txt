@@ -12,7 +12,5 @@ pandas
 tqdm
 soundfile
 advertorch
-augmentation_utils @ git+https://github.com/leocances/augmentation_utils
-metric_utils @ git+https://github.com/leocances/pytorch_metrics
-ubs8k @ git+https://github.com/leocances/UrbanSound8K
-MLU @ git+https://github.com/Labbeti/MLU@dev
+ubs8k @ git+https://github.com/leocances/UrbanSound8K@8cd9b1071c137e94f7f4cc7b1a60ac9265988a52
+MLU @ git+https://github.com/Labbeti/MLU@v0.4.6

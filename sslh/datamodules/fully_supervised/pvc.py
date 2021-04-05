@@ -21,8 +21,23 @@ class PVCFullyDataModule(LightningDataModule):
 		num_workers: int = 4,
 		drop_last: bool = False,
 		pin_memory: bool = False,
-		nb_train_steps: Optional[int] = None,
+		nb_train_steps: Optional[int] = 50000,
 	):
+		"""
+			LightningDataModule of Primate Vocalization Corpus (PVC) for fully supervised trainings.
+
+			:param dataset_root: The root path of the dataset.
+			:param transform_train: The optional transform to apply to train data. (default: None)
+			:param transform_val: The optional transform to apply to validation data. (default: None)
+			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
+			:param bsize: The batch size used for training and validation. (default: 30)
+			:param num_workers: The number of workers for each dataloader. (default: 4)
+			:param drop_last: If True, drop the last incomplete batch. (default: False)
+			:param pin_memory: If True, pin the memory of dataloader. (default: False)
+			:param nb_train_steps: The number of train steps for PVC.
+				If None, the number will be set to the number of train labeled data.
+				(default: 50000)
+		"""
 		super().__init__()
 		self.dataset_root = dataset_root
 		self.transform_train = transform_train
@@ -50,7 +65,7 @@ class PVCFullyDataModule(LightningDataModule):
 	def setup(self, stage: Optional[str] = None):
 		self.train_dataset_raw = ComParE2021PRS(self.dataset_root, "train", transform=None)
 		self.val_dataset_raw = ComParE2021PRS(self.dataset_root, "devel", transform=None)
-		# The "test" subset is unlabeled, so we do not use it for now
+		# Note: The "test" subset is unlabeled, so we do not use it for now
 		self.test_dataset_raw = None
 
 		if self.nb_train_steps is None:

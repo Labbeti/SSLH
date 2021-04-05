@@ -220,7 +220,7 @@ class SpeechCommandsStats(SpeechCommands):
 		# return waveform, sample_rate, label, speaker_id, utterance_number
 		return label, speaker_id, utterance_number
 
-	def __getitem__(self, index: int) -> Tuple[int, int, int]:
+	def __getitem__(self, index: int) -> Tuple[int, str, int]:
 		fileid = self._walker[index]
 
 		label, speaker_id, utterance_number = self._load_item(fileid, self._path)

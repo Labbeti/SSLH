@@ -3,3 +3,4 @@ name: MNV2
 fullname: MobileNetV2
 num_classes: ${dataset.num_classes}
 activation: "softmax"
+log_activation: "log_softmax"

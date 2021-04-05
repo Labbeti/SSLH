@@ -29,6 +29,28 @@ class UBS8KFullyDataModule(LightningDataModule):
 		folds_train: Optional[List[int]] = None,
 		folds_val: Optional[List[int]] = None,
 	):
+		"""
+			LightningDataModule of UrbanSound8K (UBS8K) for fully supervised trainings.
+
+			:param dataset_root: The root path of the dataset.
+			:param transform_train: The optional transform to apply to train data. (default: None)
+			:param transform_val: The optional transform to apply to validation data. (default: None)
+			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
+			:param bsize: The batch size used for training and validation. (default: 30)
+			:param num_workers: The number of workers for each dataloader. (default: 4)
+			:param drop_last: If True, drop the last incomplete batch. (default: False)
+			:param pin_memory: If True, pin the memory of dataloader. (default: False)
+			:param folds_train: The folds used for training.
+				If None and folds_val is not None, then use the unused folds of validation.
+				If both folds_train and folds_val are None, then the default folds are used:
+					[1, 2, 3, 4, 5, 6, 7, 8, 9] for folds_train and [10] for folds_val.
+				(default: None)
+			:param folds_val: The folds used for validation.
+				If None and folds_train is not None, then use the unused folds of training.
+				If both folds_train and folds_val are None, then the default folds are used:
+					[1, 2, 3, 4, 5, 6, 7, 8, 9] for folds_train and [10] for folds_val.
+				(default: None)
+		"""
 		super().__init__()
 		self.dataset_root = dataset_root
 		self.transform_train = transform_train
@@ -59,6 +81,7 @@ class UBS8KFullyDataModule(LightningDataModule):
 
 		metadata_root = osp.join(self.dataset_root, "metadata")
 		audio_root = osp.join(self.dataset_root, "audio")
+
 		if not osp.isdir(metadata_root):
 			raise RuntimeError(f"Unknown metadata root dirpath '{metadata_root}' for UBS8K.")
 		if not osp.isdir(audio_root):

@@ -3,5 +3,6 @@ name: MNV2Rot
 fullname: MobileNetV2Rot
 num_classes: ${dataset.num_classes}
 activation: "softmax"
+log_activation: "log_softmax"
 
 rot_size: 4

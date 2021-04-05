@@ -112,6 +112,7 @@ class SpeechCommand10(SpeechCommands):
 		# Split each noise files into 1 second long segment
 		to_process = []
 		for file in os.listdir(os.path.join(*self.root_path, EXCEPT_FOLDER)):
+			file: str
 			if file[-4:] == ".wav":
 				to_process.append(os.path.join(noise_path, file))
 
@@ -144,6 +145,7 @@ class SpeechCommand10(SpeechCommands):
 		# Split each noise files into 1 second long segment
 		to_process = []
 		for file in os.listdir(os.path.join(*self.root_path, EXCEPT_FOLDER)):
+			file: str
 			if file[-4:] == ".wav":
 				to_process.append(os.path.join(noise_path, file))
 

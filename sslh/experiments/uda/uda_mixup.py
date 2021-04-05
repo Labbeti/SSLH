@@ -2,9 +2,9 @@
 import torch
 
 from torch import Tensor
-from torch.nn import Module
+from torch.nn import Module, Softmax
 from torch.optim.optimizer import Optimizer
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn import CrossEntropyWithVectors
@@ -16,18 +16,18 @@ class UDAMixUp(UDA):
 	def __init__(
 		self,
 		model: Module,
-		activation: Callable,
 		optimizer: Optimizer,
-		metric_dict_train_s: Optional[MetricDict] = None,
-		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
-		metric_dict_val: Optional[MetricDict] = None,
-		metric_dict_test: Optional[MetricDict] = None,
+		activation: Module = Softmax(dim=-1),
 		criterion_s: Module = CrossEntropyWithVectors(reduction="none"),
 		criterion_u: Module = CrossEntropyWithVectors(reduction="none"),
 		threshold: float = 0.8,
 		temperature: float = 0.4,
 		lambda_u: float = 1.0,
 		alpha: float = 0.75,
+		metric_dict_train_s: Optional[MetricDict] = None,
+		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
+		metric_dict_val: Optional[MetricDict] = None,
+		metric_dict_test: Optional[MetricDict] = None,
 		log_on_epoch: bool = True,
 	):
 		super().__init__(
@@ -48,7 +48,7 @@ class UDAMixUp(UDA):
 		self.alpha = alpha
 		self.mixup = MixUpModule(alpha=alpha, apply_max=True)
 
-		self.save_hyperparameters("alpha")
+		self.save_hyperparameters({"alpha": alpha})
 
 	def training_step(
 		self,

@@ -8,5 +8,6 @@ monitor: "val/acc"
 monitor_mode: "max"
 val_check_interval: 1000
 log_on_epoch: false
+sample_rate: 16000
 
 nb_train_steps: 50000

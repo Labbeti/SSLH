@@ -10,6 +10,18 @@ from .ubs8k import get_transform_ubs8k, get_target_transform_ubs8k, get_self_tra
 
 
 def get_transform(dataset_name: str, transform_name: str) -> Callable:
+	"""
+		Returns the transform to apply to data for a specific dataset.
+
+		Transform names available are :
+			- identity (means no augment, but basic transforms like transform to spectrogram are returned)
+			- weak (weak augment pool for MM, RMM and FM)
+			- strong (strong augment pool for RMM, FM and UDA)
+
+		:param dataset_name: The dataset of the transform.
+		:param transform_name: The name of the transform.
+		:return: The transform as Callable object.
+	"""
 	dataset_name = dataset_name.upper()
 
 	if dataset_name == "ADS":

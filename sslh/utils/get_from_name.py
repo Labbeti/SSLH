@@ -1,18 +1,27 @@
 
-from torch.nn import Module, BCELoss, LogSigmoid, LogSoftmax, Sigmoid, Softmax, Sequential
+from torch.nn import Module, BCELoss, LogSigmoid, LogSoftmax, Sigmoid, Softmax, Sequential, Parameter, MSELoss
 from torch.optim import Optimizer, Adam, SGD
-from typing import Callable, Optional
+from typing import Iterator, Optional, Union
 
 from mlu.nn import CrossEntropyWithVectors, BCELossBatchMean, Clamp, JSDivLoss, KLDivLossWithProbabilities, Identity
 from sslh.callbacks.schedulers import CosineScheduler, SoftCosineScheduler, LRSchedulerCallback
 
 
 def get_criterion_from_name(name: str, reduction: str = "mean") -> Module:
+	"""
+		Return a criterion Module with a specific name.
+
+		:param name: The name of the criterion.
+		:param reduction: The reduction function to apply to losses outputs. (default: 'mean')
+		:return: The criterion module.
+	"""
 	name = name.lower()
 	reduction = reduction.lower()
 
 	if name in ["CrossEntropyWithVectors".lower(), "CrossEntropy".lower(), "ce".lower()]:
 		loss = CrossEntropyWithVectors(reduction=reduction)
+	elif name in ["MSE", "mse", "MSELoss"]:
+		loss = MSELoss(reduction=reduction)
 	elif name in ["BCELoss".lower(), "bce".lower()]:
 		if reduction == "none":
 			loss = BCELossBatchMean()
@@ -31,21 +40,24 @@ def get_criterion_from_name(name: str, reduction: str = "mean") -> Module:
 	return loss
 
 
-def get_optimizer_from_name(name: str, model: Module, **kwargs) -> Optimizer:
+def get_optimizer_from_name(name: str, parameters: Union[Module, Iterator[Parameter]], **kwargs) -> Optimizer:
 	"""
 		Instantiate optimizer from args and torch module.
 		Available optimizers : Adam, SGD.
 
 		:param name: TODO
-		:param model: The torch module to update with the optimizer.
+		:param parameters: The torch parameters or module to update with the optimizer.
 		:returns: The optimizer to use.
 	"""
 	name = name.lower()
 
+	if isinstance(parameters, Module):
+		parameters = parameters.parameters()
+
 	if name == "Adam".lower():
-		optimizer = Adam(model.parameters(), **kwargs)
+		optimizer = Adam(parameters, **kwargs)
 	elif name == "SGD".lower():
-		optimizer = SGD(model.parameters(), **kwargs)
+		optimizer = SGD(parameters, **kwargs)
 	else:
 		raise RuntimeError(f"Unknown optimizer '{name}'. Must be one of {('Adam', 'SGD')}")
 
@@ -76,7 +88,7 @@ def get_scheduler_from_name(name: str, optimizer: Optimizer, **kwargs) -> Option
 	return scheduler
 
 
-def get_activation_from_name(name: str, dim: int = -1, clamp: bool = True, clamp_min: float = 2e-30) -> Callable:
+def get_activation_from_name(name: str, dim: int = -1, clamp: bool = True, clamp_min: float = 2e-30) -> Module:
 	"""
 		Build an activation function.
 

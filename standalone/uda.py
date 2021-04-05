@@ -3,7 +3,7 @@ import hydra
 import os.path as osp
 import torch
 
-from hydra.utils import DictConfig
+from hydra.utils import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
@@ -35,6 +35,8 @@ from sslh.utils.test_stack_module import TestStackModule
 def main(cfg: DictConfig):
 	# Initialisation
 	reset_seed(cfg.seed)
+	if cfg.verbose:
+		print(OmegaConf.to_yaml(cfg))
 
 	# Build transforms
 	transform_identity = get_transform(cfg.dataset.name, "identity")
@@ -48,7 +50,7 @@ def main(cfg: DictConfig):
 	# Build datamodule
 	datamodule = get_semi_datamodule_from_cfg(cfg, transform_train_s, transform_train_u, transform_val, target_transform)
 
-	# Build model, activation, optimizer and criterions
+	# Build model, activation, optimizer and criterion
 	model = get_model_from_cfg(cfg)
 	activation = get_activation_from_name(cfg.model.activation)
 	optimizer = get_optimizer_from_name(cfg.optim.name, model, lr=cfg.optim.lr)
@@ -69,14 +71,14 @@ def main(cfg: DictConfig):
 		activation=activation,
 		criterion_s=criterion_s,
 		criterion_u=criterion_u,
+		lambda_u=cfg.experiment.lambda_u,
+		threshold=cfg.experiment.threshold,
+		temperature=cfg.experiment.temperature,
 		metric_dict_train_s=metric_dict_train_s,
 		metric_dict_train_u_pseudo=metric_dict_train_u_pseudo,
 		metric_dict_val=metric_dict_val,
 		metric_dict_test=metric_dict_test,
 		log_on_epoch=cfg.dataset.log_on_epoch,
-		lambda_u=cfg.experiment.lambda_u,
-		threshold=cfg.experiment.threshold,
-		temperature=cfg.experiment.temperature,
 	)
 
 	if cfg.experiment.fullname == "UDA":
@@ -106,10 +108,17 @@ def main(cfg: DictConfig):
 	)
 	callbacks.append(checkpoint)
 
-	if cfg.sched is not None:
+	if cfg.sched.name != "none":
 		callbacks.append(LogLRCallback(log_on_epoch=cfg.sched.on_epoch))
 		scheduler = get_scheduler_from_name(cfg.sched.fullname, optimizer, on_epoch=cfg.sched.on_epoch)
 		callbacks.append(scheduler)
+
+	# Resume model weights with checkpoint
+	if cfg.resume_path is not None:
+		if not isinstance(cfg.resume_path, str) or not osp.isfile(cfg.resume_path):
+			raise RuntimeError(f"Invalid resume checkpoint filepath '{cfg.resume_path}'.")
+		checkpoint_data = torch.load(cfg.resume_path)
+		experiment_module.load_state_dict(checkpoint_data['state_dict'])
 
 	# Start training
 	trainer = Trainer(
@@ -122,7 +131,10 @@ def main(cfg: DictConfig):
 		multiple_trainloader_mode="max_size_cycle",
 		callbacks=callbacks,
 		val_check_interval=cfg.dataset.val_check_interval,
+		resume_from_checkpoint=cfg.resume_path,
+		terminate_on_nan=True,
 	)
+
 	trainer.fit(experiment_module, datamodule=datamodule)
 	trainer.test(experiment_module, datamodule=datamodule)
 
@@ -131,7 +143,7 @@ def main(cfg: DictConfig):
 		checkpoint_data = torch.load(checkpoint.best_model_path)
 		experiment_module.load_state_dict(checkpoint_data['state_dict'])
 
-	# Test
+	# Test with validation/testing and non-stack or stack metrics.
 	trainer_params = dict(
 		max_epochs=1,
 		logger=logger,

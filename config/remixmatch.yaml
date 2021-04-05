@@ -7,6 +7,7 @@ defaults:
   - path: default
   - sched: cosine
 
+verbose: false
 datetime: "${now:%Y-%m-%d_%H:%M:%S}"
 seed: 1234
 tag: ""
@@ -15,6 +16,7 @@ max_it: null
 cpus: 12
 gpus: 1
 logdir: ${path.logdir}
+resume_path: null
 bsize_s: 30
 bsize_u: 30
 ratio_s: 0.1

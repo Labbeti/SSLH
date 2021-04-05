@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from torch.nn import Module, Softmax
 from torch.optim.optimizer import Optimizer
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn import CrossEntropyWithVectors, OneHot
@@ -17,18 +17,18 @@ class FixMatchMixUp(FixMatch):
 		self,
 		model: Module,
 		optimizer: Optimizer,
-		activation: Callable = Softmax(dim=-1),
+		activation: Module = Softmax(dim=-1),
 		criterion_s: Module = CrossEntropyWithVectors(reduction="none"),
 		criterion_u: Module = CrossEntropyWithVectors(reduction="none"),
+		target_transform: Module = OneHot(num_classes=10),
+		lambda_u: float = 1.0,
+		threshold: float = 0.95,
+		alpha: float = 0.75,
 		metric_dict_train_s: Optional[MetricDict] = None,
 		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
 		metric_dict_val: Optional[MetricDict] = None,
 		metric_dict_test: Optional[MetricDict] = None,
 		log_on_epoch: bool = True,
-		target_transform: Callable = OneHot(num_classes=10),
-		lambda_u: float = 1.0,
-		threshold: float = 0.95,
-		alpha: float = 0.75,
 	):
 		super().__init__(
 			model=model,
@@ -36,19 +36,19 @@ class FixMatchMixUp(FixMatch):
 			activation=activation,
 			criterion_s=criterion_s,
 			criterion_u=criterion_u,
+			target_transform=target_transform,
+			lambda_u=lambda_u,
+			threshold=threshold,
 			metric_dict_train_s=metric_dict_train_s,
 			metric_dict_train_u_pseudo=metric_dict_train_u_pseudo,
 			metric_dict_val=metric_dict_val,
 			metric_dict_test=metric_dict_test,
 			log_on_epoch=log_on_epoch,
-			target_transform=target_transform,
-			lambda_u=lambda_u,
-			threshold=threshold,
 		)
 
 		self.alpha = alpha
 		self.mixup = MixUpModule(alpha=alpha, apply_max=True)
-		self.save_hyperparameters("alpha")
+		self.save_hyperparameters({"alpha": alpha})
 
 	def training_step(
 		self,

@@ -13,12 +13,8 @@ class WarmUpCallback(Callback):
 		target_ratio_num_steps: Optional[float] = None,
 		target_obj: Optional[object] = None,
 		target_attribute: Optional[str] = None,
-		on_train_epoch_end: bool = False,
-		on_train_batch_end: bool = True,
+		on_epoch: bool = False,
 	):
-		if on_train_epoch_end and on_train_batch_end:
-			raise ValueError("Options 'on_train_epoch_end_' and 'on_train_batch_end_' are mutually exclusive.")
-
 		if target_num_steps is not None and target_ratio_num_steps is not None:
 			raise ValueError("Options 'target_num_steps' and 'target_ratio_num_steps' are mutually exclusive.")
 
@@ -29,8 +25,7 @@ class WarmUpCallback(Callback):
 		self.target_ratio_num_steps = target_ratio_num_steps
 		self.target_obj = target_obj
 		self.target_attribute = target_attribute
-		self.on_train_epoch_end_ = on_train_epoch_end
-		self.on_train_batch_end_ = on_train_batch_end
+		self.on_epoch = on_epoch
 
 		self._step = 0
 		self._num_steps = 1
@@ -46,7 +41,7 @@ class WarmUpCallback(Callback):
 		batch_idx: int,
 		dataloader_idx: int
 	) -> None:
-		if self.on_train_batch_end_:
+		if not self.on_epoch:
 			step = pl_module.global_step
 			if self.target_num_steps is not None:
 				num_steps = self.target_num_steps
@@ -62,7 +57,7 @@ class WarmUpCallback(Callback):
 		pl_module: LightningModule,
 		outputs: Any,
 	) -> None:
-		if self.on_train_epoch_end_:
+		if self.on_epoch:
 			step = pl_module.current_epoch
 			if self.target_num_steps is not None:
 				num_steps = self.target_num_steps

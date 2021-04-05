@@ -8,5 +8,6 @@ monitor: "val/acc"
 monitor_mode: "max"
 val_check_interval: 1.0
 log_on_epoch: true
+sample_rate: 16000
 
 download: true

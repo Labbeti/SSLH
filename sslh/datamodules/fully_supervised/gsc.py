@@ -23,6 +23,19 @@ class GSCFullyDataModule(LightningDataModule):
 		pin_memory: bool = False,
 		download_dataset: bool = True,
 	):
+		"""
+			LightningDataModule of GoogleSpeechCommands (GSC) for fully supervised trainings.
+
+			:param dataset_root: The root path of the dataset.
+			:param transform_train: The optional transform to apply to train data. (default: None)
+			:param transform_val: The optional transform to apply to validation data. (default: None)
+			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
+			:param bsize: The batch size used for training and validation. (default: 30)
+			:param num_workers: The number of workers for each dataloader. (default: 4)
+			:param drop_last: If True, drop the last incomplete batch. (default: False)
+			:param pin_memory: If True, pin the memory of dataloader. (default: False)
+			:param download_dataset: If True, automatically download the dataset in the root directory. (default: True)
+		"""
 		super().__init__()
 		self.dataset_root = dataset_root
 		self.transform_train = transform_train

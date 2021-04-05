@@ -8,6 +8,8 @@ monitor: "val/acc"
 monitor_mode: "max"
 val_check_interval: 1.0
 log_on_epoch: true
+sample_rate: 22050
 
-folds_train: [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+# If null, the program detect automatically the remaining folds
+folds_train: null
 folds_val: [ 10 ]

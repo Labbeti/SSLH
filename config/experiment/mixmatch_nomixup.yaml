@@ -10,3 +10,4 @@ temperature: 0.5
 nb_augms: 2
 warmup_num_steps: null
 warmup_ratio_num_steps: 0.5
+warmup_on_epoch: false

@@ -27,8 +27,30 @@ class CIFAR10SemiDataModule(LightningDataModule):
 		pin_memory: bool = False,
 		ratio_s: float = 0.1,
 		ratio_u: float = 0.9,
+		duplicate_loader_s: bool = False,
 		download_dataset: bool = True,
 	):
+		"""
+			LightningDataModule of CIFAR-10 for semi-supervised trainings.
+
+			Note: The splits of the dataset has the same class distribution.
+
+			:param dataset_root: The root path of the dataset.
+			:param transform_train_s: The optional transform to apply to supervised train data. (default: None)
+			:param transform_train_u: The optional transform to apply to unsupervised train data. (default: None)
+			:param transform_val: The optional transform to apply to validation data. (default: None)
+			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
+			:param bsize_train_s: The batch size used for supervised train data. (default: 64)
+			:param bsize_train_u: The batch size used for unsupervised train data. (default: 64)
+			:param num_workers_s: The number of workers for supervised train dataloader. (default: 2)
+			:param num_workers_s: The number of workers for unsupervised train dataloader. (default: 3)
+			:param drop_last: If True, drop the last incomplete batch. (default: False)
+			:param pin_memory: If True, pin the memory of dataloader. (default: False)
+			:param ratio_s: The ratio of the supervised subset len in [0, 1]. (default: 0.1)
+			:param ratio_u: The ratio of the unsupervised subset len in [0, 1]. (default: 0.9)
+			:param duplicate_loader_s: If True, duplicate the supervised dataloader for DCT training. (default: False)
+			:param download_dataset: If True, automatically download the dataset in the root directory. (default: True)
+		"""
 		super().__init__()
 		self.dataset_root = dataset_root
 		self.transform_train_s = transform_train_s
@@ -46,6 +68,7 @@ class CIFAR10SemiDataModule(LightningDataModule):
 		self.pin_memory = pin_memory
 		self.ratio_s = ratio_s
 		self.ratio_u = ratio_u
+		self.duplicate_loader_s = duplicate_loader_s
 
 		self.download_dataset = download_dataset
 
@@ -75,7 +98,7 @@ class CIFAR10SemiDataModule(LightningDataModule):
 			target_one_hot=False,
 		)
 
-	def train_dataloader(self) -> Tuple[DataLoader, DataLoader]:
+	def train_dataloader(self) -> Tuple[DataLoader, ...]:
 		train_dataset_s = TransformDataset(self.train_dataset_raw, self.transform_train_s, index=0)
 		train_dataset_s = TransformDataset(train_dataset_s, self.target_transform, index=1)
 
@@ -98,7 +121,13 @@ class CIFAR10SemiDataModule(LightningDataModule):
 			drop_last=self.drop_last,
 			pin_memory=self.pin_memory,
 		)
-		return loader_s, loader_u
+
+		if not self.duplicate_loader_s:
+			loaders = loader_s, loader_u
+		else:
+			loaders = loader_s, loader_s, loader_u
+
+		return loaders
 
 	def val_dataloader(self) -> Optional[DataLoader]:
 		val_dataset = self.val_dataset_raw

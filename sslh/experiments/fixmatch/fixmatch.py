@@ -5,7 +5,7 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch.nn import Module, Softmax
 from torch.optim.optimizer import Optimizer
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn import CrossEntropyWithVectors, OneHot
@@ -16,17 +16,17 @@ class FixMatch(LightningModule):
 		self,
 		model: Module,
 		optimizer: Optimizer,
-		activation: Callable = Softmax(dim=-1),
+		activation: Module = Softmax(dim=-1),
 		criterion_s: Module = CrossEntropyWithVectors(reduction="none"),
 		criterion_u: Module = CrossEntropyWithVectors(reduction="none"),
+		target_transform: Module = OneHot(num_classes=10),
+		lambda_u: float = 1.0,
+		threshold: float = 0.95,
 		metric_dict_train_s: Optional[MetricDict] = None,
 		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
 		metric_dict_val: Optional[MetricDict] = None,
 		metric_dict_test: Optional[MetricDict] = None,
 		log_on_epoch: bool = True,
-		target_transform: Callable = OneHot(num_classes=10),
-		lambda_u: float = 1.0,
-		threshold: float = 0.95,
 	):
 		if metric_dict_train_s is None:
 			metric_dict_train_s = MetricDict()
@@ -42,17 +42,27 @@ class FixMatch(LightningModule):
 		self.activation = activation
 		self.optimizer = optimizer
 		self.target_transform = target_transform
-		self.metric_dict_train_s = metric_dict_train_s
-		self.metric_dict_train_u_pseudo = metric_dict_train_u_pseudo
-		self.metric_dict_val = metric_dict_val
-		self.metric_dict_test = metric_dict_test
 		self.criterion_s = criterion_s
 		self.criterion_u = criterion_u
 		self.threshold = threshold
 		self.lambda_u = lambda_u
+		self.metric_dict_train_s = metric_dict_train_s
+		self.metric_dict_train_u_pseudo = metric_dict_train_u_pseudo
+		self.metric_dict_val = metric_dict_val
+		self.metric_dict_test = metric_dict_test
 
 		self.log_params = dict(on_epoch=True, on_step=not log_on_epoch)
-		self.save_hyperparameters("lambda_u", "threshold")
+		self.save_hyperparameters({
+			"experiment": self.__class__.__name__,
+			"model": model.__class__.__name__,
+			"optimizer": optimizer.__class__.__name__,
+			"activation": activation.__class__.__name__,
+			"criterion_s": criterion_s.__class__.__name__,
+			"criterion_u": criterion_u.__class__.__name__,
+			"target_transform": target_transform.__class__.__name__,
+			"lambda_u": lambda_u,
+			"threshold": threshold,
+		})
 
 	def training_step(
 		self,

@@ -5,7 +5,7 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch.nn import Module, Softmax
 from torch.optim.optimizer import Optimizer
-from typing import Callable, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn.modules.loss import CrossEntropyWithVectors
@@ -17,18 +17,18 @@ class MixMatch(LightningModule):
 		self,
 		model: Module,
 		optimizer: Optimizer,
-		activation: Callable = Softmax(dim=-1),
+		activation: Module = Softmax(dim=-1),
 		criterion_s: Module = CrossEntropyWithVectors(reduction="mean"),
 		criterion_u: Module = CrossEntropyWithVectors(reduction="mean"),
+		lambda_u: float = 1.0,
+		nb_augms: int = 2,
+		temperature: float = 0.5,
+		alpha: float = 0.75,
 		metric_dict_train_s: Optional[MetricDict] = None,
 		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
 		metric_dict_val: Optional[MetricDict] = None,
 		metric_dict_test: Optional[MetricDict] = None,
 		log_on_epoch: bool = True,
-		lambda_u: float = 1.0,
-		nb_augms: int = 2,
-		temperature: float = 0.5,
-		alpha: float = 0.75,
 	):
 		if metric_dict_train_s is None:
 			metric_dict_train_s = MetricDict()
@@ -43,21 +43,32 @@ class MixMatch(LightningModule):
 		self.model = model
 		self.activation = activation
 		self.optimizer = optimizer
-		self.metric_dict_train_s = metric_dict_train_s
-		self.metric_dict_train_u_pseudo = metric_dict_train_u_pseudo
-		self.metric_dict_val = metric_dict_val
-		self.metric_dict_test = metric_dict_test
 		self.criterion_s = criterion_s
 		self.criterion_u = criterion_u
 		self.lambda_u = lambda_u
 		self.nb_augms = nb_augms
 		self.temperature = temperature
 		self.alpha = alpha
+		self.metric_dict_train_s = metric_dict_train_s
+		self.metric_dict_train_u_pseudo = metric_dict_train_u_pseudo
+		self.metric_dict_val = metric_dict_val
+		self.metric_dict_test = metric_dict_test
 
 		self.mixup = MixUpModule(alpha=alpha, apply_max=True)
 
 		self.log_params = dict(on_epoch=log_on_epoch, on_step=not log_on_epoch)
-		self.save_hyperparameters("lambda_u", "nb_augms", "temperature", "alpha")
+		self.save_hyperparameters({
+			"experiment": self.__class__.__name__,
+			"model": model.__class__.__name__,
+			"optimizer": optimizer.__class__.__name__,
+			"activation": activation.__class__.__name__,
+			"criterion_s": criterion_s.__class__.__name__,
+			"criterion_u": criterion_u.__class__.__name__,
+			"lambda_u": lambda_u,
+			"nb_augms": nb_augms,
+			"temperature": temperature,
+			"alpha": alpha,
+		})
 
 	def training_step(self, batch: Tuple[Tuple[Tensor, Tensor], List[Tensor]], batch_idx: int) -> Tensor:
 		(xs_weak, ys), xu_weak_lst = batch
@@ -105,6 +116,7 @@ class MixMatch(LightningModule):
 		bsize_s = len(xs_weak)
 		xs_weak_mix, ys_mix = self.mixup(xs_weak, xw[:bsize_s], ys, yw[:bsize_s])
 		xu_weak_mix, yu_mix = self.mixup(xu_weak_lst, xw[bsize_s:], yu_lst, yw[bsize_s:])
+
 		return xs_weak_mix, xu_weak_mix, ys_mix, yu_mix
 
 	def guess_label(self, xu_weak_lst: List[Tensor]) -> Tensor:

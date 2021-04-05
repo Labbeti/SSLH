@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 from torch.nn import Module, Softmax
 from torch.optim import Optimizer
-from typing import Callable, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn import Identity, CrossEntropyWithVectors
@@ -16,21 +16,21 @@ class ReMixMatchNoRot(ReMixMatch):
 		self,
 		model: Module,
 		optimizer: Optimizer,
-		activation: Callable = Softmax(dim=-1),
+		activation: Module = Softmax(dim=-1),
 		criterion_s: Module = CrossEntropyWithVectors(reduction="mean"),
 		criterion_u: Module = CrossEntropyWithVectors(reduction="mean"),
 		criterion_u1: Module = CrossEntropyWithVectors(reduction="mean"),
-		metric_dict_train_s: Optional[MetricDict] = None,
-		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
-		metric_dict_val: Optional[MetricDict] = None,
-		metric_dict_test: Optional[MetricDict] = None,
-		log_on_epoch: bool = True,
 		lambda_u: float = 1.5,
 		lambda_u1: float = 0.5,
 		nb_augms: int = 2,
 		temperature: float = 0.5,
 		alpha: float = 0.75,
 		history: int = 128,
+		metric_dict_train_s: Optional[MetricDict] = None,
+		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
+		metric_dict_val: Optional[MetricDict] = None,
+		metric_dict_test: Optional[MetricDict] = None,
+		log_on_epoch: bool = True,
 	):
 		super().__init__(
 			model=model,

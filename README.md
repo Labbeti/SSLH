@@ -1,6 +1,21 @@
-# Semi Supervised Learning with Holistic methods (SSLH)
+# Deep Semi-Supervised Learning with Holistic methods (SSLH)
 
-Holistic methods for Semi-Supervised Learning (FixMatch, MixMatch, ReMixMatch and UDA) for AudioSet (ADS), CIFAR-10, ESC-10, GoogleSpeechCommands (GSC), Primate Vocalize Corpus (PVC) and UrbanSound8k (UBS8K) datasets.
+Unofficial PyTorch and PyTorch-Lightning implementations of 4 Deep Semi-Supervised Learning methods :
+- [FixMatch (FM)](https://arxiv.org/pdf/2001.07685.pdf)
+- [MixMatch (MM)](https://arxiv.org/pdf/1905.02249.pdf)
+- [ReMixMatch (RMM)](https://arxiv.org/pdf/1911.09785.pdf)
+- [Unsupervised Data Augmentation (UDA)](https://arxiv.org/pdf/1904.12848.pdf)
+
+For the 6 datasets :
+- [AudioSet (ADS)](https://static.googleusercontent.com/media/research.google.com/fr//pubs/archive/45857.pdf)
+- [CIFAR-10 (CIFAR10)](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf)
+- [ESC-10 (ESC10)](https://www.karolpiczak.com/papers/Piczak2015-ESC-Dataset.pdf)  
+- [Google Speech Commands (GSC)](https://arxiv.org/pdf/1804.03209.pdf)
+- [Primate Vocalization Corpus (PVC)](https://arxiv.org/pdf/2101.10390.pdf)
+- [UrbanSound8k (UBS8K)](http://www.justinsalamon.com/uploads/4/3/9/4/4394963/salamon_urbansound_acmmm14.pdf)
+
+The models available are WideResNet28, MobileNetV1 and MobileNetV2.
+The implementation of Mean Teacher (MT) and Deep Co-Training (DCT) are still in development.
 
 ## Installation
 #### Prerequisites
@@ -13,28 +28,24 @@ Holistic methods for Semi-Supervised Learning (FixMatch, MixMatch, ReMixMatch an
 ```bash
 git clone https://github.com/Labbeti/SSLH
 ```
-- Set up the package in your environment (passwords can be required during installation) :
+- Set up the package in your environment :
 ```bash
 cd SSLH
 pip install -e .
-```
-- Create the results folders :
-```bash
-./build_directories.sh
 ```
 
 The installation is now finished.
 
 #### Alternatives
 The project contains also a ```environment.yaml``` and ```requirements.txt``` for installing the packages respectively with conda or pip :
-- With **conda** environment :
+- With **conda** environment file :
 ```bash
 conda create -n env_sslh -f environment.yaml
 conda activate env_sslh
 pip install -e . --no-dependencies
 ```
 
-- With **pip** environment :
+- With **pip** requirements file :
 ```bash
 pip install -r requirements.txt
 pip install -e . --no-dependencies
@@ -78,7 +89,7 @@ python fixmatch.py dataset=ubs8K dataset.root="../data/UBS8K" experiment=fixmatc
 ```
 (note: default folds used are in "config/dataset/ubs8k.yaml")
 
-## Package overview
+## SSLH Package overview
 ```
 sslh
 ├── callbacks

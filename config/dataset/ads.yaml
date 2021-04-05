@@ -8,6 +8,7 @@ monitor: "val/fscore"
 monitor_mode: "max"
 val_check_interval: 10000
 log_on_epoch: false
+sample_rate: 32000
 
 train_subset: "unbalanced"
-nb_max_iterations: 125000
+nb_train_steps: 125000

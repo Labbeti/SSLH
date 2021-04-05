@@ -29,6 +29,8 @@ def get_semi_datamodule_from_cfg(
 		:return: The LightningDataModule build from config and transforms.
 	"""
 
+	duplicate_loader_s = cfg.experiment.duplicate_loader_s if hasattr(cfg.experiment, "duplicate_loader_s") else False
+
 	datamodule_params = dict(
 		dataset_root=cfg.dataset.root,
 		ratio_s=cfg.ratio_s,
@@ -41,6 +43,7 @@ def get_semi_datamodule_from_cfg(
 		bsize_train_u=cfg.bsize_u,
 		num_workers_s=round(cfg.cpus / 2),
 		num_workers_u=round(cfg.cpus / 2),
+		duplicate_loader_s=duplicate_loader_s,
 	)
 
 	if cfg.dataset.name == "ADS":

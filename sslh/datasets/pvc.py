@@ -82,13 +82,14 @@ def class_balance_split(
 	all_targets = list(map(to_one_hot, dataset.subsets_info['target']))
 	all_target_idx = list(range(len(all_targets)))
 
-	# expected occurance and tolerance
+	# expected occurrence and tolerance
 	total_occur = numpy.sum(all_targets, axis=0)
 	s_expected_occur = numpy.ceil(total_occur * supervised_ratio)
-	u_expected_occur = numpy.ceil(total_occur * unsupervised_ratio)
+	# u_expected_occur = numpy.ceil(total_occur * unsupervised_ratio)
+
 	if verbose:
-		print(' s_expected_occur: ', s_expected_occur)
-		print("s expected occur: ", sum(s_expected_occur))
+		print('s_expected_occur: ', s_expected_occur)
+		print("sum s expected occur: ", sum(s_expected_occur))
 
 	all_sample = list(zip(all_targets, all_target_idx))
 	s_subset, remaining_sample = fill_subset(all_sample, s_expected_occur)
@@ -112,6 +113,7 @@ class IterationBalancedSampler(Sampler):
 		nb_classes = len(COMPARE2021PRSBase.CLASSES)
 
 		class_indexes = [[] for _ in range(nb_classes)]
+		class_indexes: List[List[int]]
 
 		for sample_idx, target in zip(self.index_list, self.all_targets):
 			target_idx = [target]
@@ -180,7 +182,7 @@ def mean_teacher(
 		train_transform: Module = None,
 		val_transform: Module = None,
 
-		num_workers: int = 5,
+		num_workers: int = 4,
 		pin_memory: bool = False,
 		seed: int = 1234,
 

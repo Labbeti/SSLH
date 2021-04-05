@@ -4,7 +4,7 @@ from pytorch_lightning import LightningModule
 from torch import Tensor
 from torch.nn import Module, Softmax
 from torch.optim.optimizer import Optimizer
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 from mlu.metrics import MetricDict
 from mlu.nn import CrossEntropyWithVectors
@@ -15,17 +15,17 @@ class UDA(LightningModule):
 		self,
 		model: Module,
 		optimizer: Optimizer,
-		activation: Callable = Softmax(dim=-1),
+		activation: Module = Softmax(dim=-1),
 		criterion_s: Module = CrossEntropyWithVectors(reduction="none"),
 		criterion_u: Module = CrossEntropyWithVectors(reduction="none"),
+		lambda_u: float = 1.0,
+		threshold: float = 0.8,
+		temperature: float = 0.4,
 		metric_dict_train_s: Optional[MetricDict] = None,
 		metric_dict_train_u_pseudo: Optional[MetricDict] = None,
 		metric_dict_val: Optional[MetricDict] = None,
 		metric_dict_test: Optional[MetricDict] = None,
 		log_on_epoch: bool = True,
-		lambda_u: float = 1.0,
-		threshold: float = 0.8,
-		temperature: float = 0.4,
 	):
 		if metric_dict_train_s is None:
 			metric_dict_train_s = MetricDict()
@@ -51,7 +51,18 @@ class UDA(LightningModule):
 		self.temperature = temperature
 
 		self.log_params = dict(on_epoch=log_on_epoch, on_step=not log_on_epoch)
-		self.save_hyperparameters("lambda_u", "threshold", "temperature")
+
+		self.save_hyperparameters({
+			"experiment": self.__class__.__name__,
+			"model": model.__class__.__name__,
+			"activation": activation.__class__.__name__,
+			"optimizer": optimizer.__class__.__name__,
+			"criterion_s": criterion_s.__class__.__name__,
+			"criterion_u": criterion_u.__class__.__name__,
+			"lambda_u": lambda_u,
+			"threshold": threshold,
+			"temperature": temperature,
+		})
 
 	def training_step(
 		self,
@@ -75,6 +86,9 @@ class UDA(LightningModule):
 		loss_u = torch.mean(loss_u * mask)
 
 		loss = loss_s + self.lambda_u * loss_u
+		import math
+		if math.isnan(loss) or math.isinf(loss):
+			breakpoint()
 
 		with torch.no_grad():
 			self.log_dict(
@@ -91,17 +105,13 @@ class UDA(LightningModule):
 
 		return loss
 
-	def softmax_sharpen(self, pred: Tensor) -> Tensor:
-		pred = pred.div(self.temperature).exp()
-		return pred / pred.norm(p=1, dim=-1, keepdim=True)
-
 	def guess_label_and_mask(self, xu: Tensor) -> Tuple[Tensor, Tensor]:
 		with torch.no_grad():
 			logits_xu = self.model(xu)
 			pred_xu = self.activation(logits_xu)
 			probabilities_max, _ = pred_xu.max(dim=-1)
 			mask = probabilities_max.ge(self.threshold).to(pred_xu.dtype)
-			yu = self.softmax_sharpen(logits_xu)
+			yu = torch.softmax(logits_xu / self.temperature, dim=-1)
 			return yu, mask
 
 	def validation_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int):
