@@ -1,0 +1,13 @@
+# @package _group_
+
+name: "UDA"
+acronym: "uda"
+
+activation: "softmax"
+criterion_s: "CrossEntropy"
+criterion_u: "CrossEntropy"
+reduction: "none"
+augm_strong: "strong"
+lambda_u: 1.0
+threshold: 0.8
+temperature: 0.5

@@ -9,6 +9,7 @@
 import functools
 import h5py
 import itertools
+import logging
 import numpy as np
 import os
 import random
@@ -24,14 +25,16 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 class Audioset(Dataset):
+	N_CLASSES = 527
+
 	def __init__(
 		self,
 		root: str,
 		transform: Module = None,
-		version: str = "unbalanced",
+		version: str = 'unbalanced',
 		rdcc_nbytes: int = 512 * 1024 ** 2,
 		data_shape: tuple = (320000,),
-		data_key: str = "waveform",
+		data_key: str = 'waveform',
 		verbose: bool = False,
 	):
 		"""
@@ -40,16 +43,16 @@ class Audioset(Dataset):
 		Args:
 			root (str): The directory that contain the HDF files.
 			transform: (Module) The transformation to apply on each samples.
-			version: (str) The version of the dataset, "[unbalanced | balanced | eval]"
-			rdcc_nbytes: (int) The HDF "raw data chunk cache" in bytes. default 512 MB
+			version: (str) The version of the dataset, '[unbalanced | balanced | eval]'
+			rdcc_nbytes: (int) The HDF 'raw data chunk cache' in bytes. default 512 MB
 
 			data_shape: (tuple) The shape of the data contain in the HDF files
 				(320000, ) for raw audio sampled at 32000 KHz
 				(64, 500, ) for the pre-compute mel-spectrogram
 
 			data_key: (str) The key under which the data is store in the HDF files.
-				"waveform" when using the raw audio
-				"data" when using the pre-compute mel-spectrogram
+				'waveform' when using the raw audio
+				'data' when using the pre-compute mel-spectrogram
 		"""
 		self.transform = transform
 		self.version = version
@@ -58,16 +61,16 @@ class Audioset(Dataset):
 		self.data_shape = data_shape
 		self.verbose = verbose
 
-		if self.version not in ["balanced", "unbalanced", "eval"]:
-			raise ValueError("version available: \"unbalanced\", \"balanced\" and \"eval\"")
+		if self.version not in ['balanced', 'unbalanced', 'eval']:
+			raise ValueError('version available: "unbalanced", "balanced" and "eval"')
 
 		# HDF dataset name change if you use pre-compute feature
 		self.data_key = data_key
 
 		# variable to manage the hdf files
 		self.hdf_mapper = dict()
-		self.hdf_nb_row = dict()
-		self.hdf_nb_chunk = dict()
+		self.hdf_n_row = dict()
+		self.hdf_n_chunk = dict()
 		self.hdf_chunk_size = None
 
 		# store all targets and all audio_names for faster loading
@@ -90,21 +93,21 @@ class Audioset(Dataset):
 			return (n & (n - 1) == 0) and n != 0
 
 		if not is_power2(self.hdf_chunk_size):
-			raise RuntimeError("HDF file chunk first dimension must be a power of 2. it is %s" % self.hdf_chunk_size)
+			raise RuntimeError('HDF file chunk first dimension must be a power of 2. it is %s' % self.hdf_chunk_size)
 
-	# TODO chunk size identical in each HDF files (should be done here ?)
+	# chunk size identical in each HDF files (should be done here ?)
 
 	def _check_hdf(self):
-		audioname_path = os.path.join(self.hdf_root, "audio_names.npy")
-		targets_path = os.path.join(self.hdf_root, "targets.npy")
+		audioname_path = os.path.join(self.hdf_root, 'audio_names.npy')
+		targets_path = os.path.join(self.hdf_root, 'targets.npy')
 
 		if not os.path.isfile(audioname_path):
-			raise RuntimeError(f"Audioname standalone file doesn't exist. Please create it. (audioname_path={audioname_path})")
+			raise RuntimeError(f'Audioname standalone file doesn\'t exist. Please create it. (audioname_path={audioname_path})')
 
 		if not os.path.isfile(targets_path):
-			raise RuntimeError(f"Targets standalone file doesn't exist. Please create it. (targets_path={targets_path})")
+			raise RuntimeError(f'Targets standalone file doesn\'t exist. Please create it. (targets_path={targets_path})')
 
-	# TODO add verification for HDF files
+	# add verification for HDF files
 	# total number of row
 
 	def _prepare_hdfs(self):
@@ -115,20 +118,20 @@ class Audioset(Dataset):
 		"""
 
 		def get_chunk_valid_stat(hdf_file_: h5py.File):
-			nb_row_ = len(hdf_file_["audio_name"])
-			chunk_size = hdf_file_["audio_name"].chunks[0]
+			n_row_ = len(hdf_file_['audio_name'])
+			chunk_size = hdf_file_['audio_name'].chunks[0]
 
-			nb_valid_chunk = nb_row_ // chunk_size
-			nb_valid_row = nb_valid_chunk * chunk_size
+			n_valid_chunk = n_row_ // chunk_size
+			n_valid_row = n_valid_chunk * chunk_size
 
-			return nb_valid_row, nb_valid_chunk
+			return n_valid_row, n_valid_chunk
 
 		hdf_names = [
 			name for name in os.listdir(self.hdf_root)
-			if ".h5" in name and self.version[:4] in name[:4]
+			if '.h5' in name and self.version[:4] in name[:4]
 		]
 		if self.verbose:
-			print("______")
+			print('______')
 			print(self.version[:3])
 			print(hdf_names)
 
@@ -136,19 +139,19 @@ class Audioset(Dataset):
 		for name in hdf_names:
 			path = os.path.join(self.hdf_root, name)
 
-			hdf_file = h5py.File(path, "r", rdcc_nbytes=self.rdcc_nbytes, swmr=True)
-			nb_row, nb_chunk = get_chunk_valid_stat(hdf_file)
+			hdf_file = h5py.File(path, 'r', rdcc_nbytes=self.rdcc_nbytes, swmr=True)
+			n_row, n_chunk = get_chunk_valid_stat(hdf_file)
 
 			self.hdf_mapper[name] = hdf_file
-			self.hdf_nb_row[name] = nb_row
-			self.hdf_nb_chunk[name] = nb_chunk
+			self.hdf_n_row[name] = n_row
+			self.hdf_n_chunk[name] = n_chunk
 
-		self.hdf_chunk_size = self.hdf_mapper[name]["audio_name"].chunks[0]
+		self.hdf_chunk_size = self.hdf_mapper[name]['audio_name'].chunks[0]
 
-		targets_path = os.path.join(self.hdf_root, "targets.npy")
+		targets_path = os.path.join(self.hdf_root, 'targets.npy')
 		self.targets = np.load(targets_path)[()]
 
-		audio_names_path = os.path.join(self.hdf_root, "audio_names.npy")
+		audio_names_path = os.path.join(self.hdf_root, 'audio_names.npy')
 		self.audio_names = np.load(audio_names_path)
 
 	def _close_hdfs(self):
@@ -156,8 +159,8 @@ class Audioset(Dataset):
 			hdf_file.close()
 
 		self.hdf_mapper = dict()
-		self.hdf_nb_row = dict()
-		self.hdf_nb_chunk = dict()
+		self.hdf_n_row = dict()
+		self.hdf_n_chunk = dict()
 		self.hdf_chunk_size = None
 
 	def __getitem__(self, sample_idx: int) -> Tuple[Tensor, Tensor]:
@@ -187,28 +190,28 @@ class Audioset(Dataset):
 
 	def _get_location(self, sample_idx: int) -> Tuple[h5py.File, int, str]:
 		hdf_names = list(self.hdf_mapper.keys())
-		cumulative_nb_chunk = np.cumsum(list(self.hdf_nb_chunk.values()))
+		cumulative_n_chunk = np.cumsum(list(self.hdf_n_chunk.values()))
 
 		# find the chunk which contain the sample (at the dataset level)
 		global_chunk_idx = sample_idx // self.hdf_chunk_size
 
 		# Find in which HDF file the chunk is
-		for i in range(len(cumulative_nb_chunk)):
-			if global_chunk_idx < cumulative_nb_chunk[i]:
+		for i in range(len(cumulative_n_chunk)):
+			if global_chunk_idx < cumulative_n_chunk[i]:
 				if i == 0:
 					local_chunk_idx = global_chunk_idx
 					hdf_name = hdf_names[i]
 					return self.hdf_mapper[hdf_name], local_chunk_idx, hdf_name
 
 				else:
-					local_chunk_idx = global_chunk_idx - cumulative_nb_chunk[i - 1]
+					local_chunk_idx = global_chunk_idx - cumulative_n_chunk[i - 1]
 					hdf_name = hdf_names[i]
 					return self.hdf_mapper[hdf_name], local_chunk_idx, hdf_name
 
 		raise RuntimeError(
-			f"Invalid sample_idx={sample_idx} for AudioSet._get_location() method, cannot find the corresponding HDF file."
-			f"(detail: global_chunk_idx={global_chunk_idx}, len(cumulative_nb_chunk)={len(cumulative_nb_chunk)}, "
-			f"len(dataset)={len(self)}, len(dataset.targets)={len(self.targets)})"
+			f'Invalid sample_idx={sample_idx} for AudioSet._get_location() method, cannot find the corresponding HDF file.'
+			f'(detail: global_chunk_idx={global_chunk_idx}, len(cumulative_n_chunk)={len(cumulative_n_chunk)}, '
+			f'len(dataset)={len(self)}, len(dataset.targets)={len(self.targets)})'
 		)
 
 	def _read_chunk(self, hdf_file, chunk_idx) -> Tuple[np.ndarray, np.ndarray]:
@@ -218,7 +221,7 @@ class Audioset(Dataset):
 		targets = np.zeros(shape=(self.hdf_chunk_size, 527), dtype=bool)
 		waveforms = np.zeros(shape=(self.hdf_chunk_size, *self.data_shape), dtype=np.int16)
 
-		hdf_file["target"].read_direct(targets, slice(start, end), None)
+		hdf_file['target'].read_direct(targets, slice(start, end), None)
 		hdf_file[self.data_key].read_direct(waveforms, slice(start, end), None)
 
 		return waveforms, targets
@@ -227,15 +230,15 @@ class Audioset(Dataset):
 		"""To call if need to read only one sample from the hdf file"""
 		hdf_file, chunk_idx, hdf_name = self._get_location(sample_idx)
 
-		hdf_sample_idx = sample_idx % self.hdf_nb_row[hdf_name]
+		hdf_sample_idx = sample_idx % self.hdf_n_row[hdf_name]
 		return hdf_file[self.data_key][hdf_sample_idx]
 
 	def get_target(self, sample_idx: int):
 		"""To call if need to read only the labels of one sample"""
 		hdf_file, chunk_idx, hdf_name = self._get_location(sample_idx)
 
-		hdf_sample_idx = sample_idx % self.hdf_nb_row[hdf_name]
-		return hdf_file["target"][hdf_sample_idx]
+		hdf_sample_idx = sample_idx % self.hdf_n_row[hdf_name]
+		return hdf_file['target'][hdf_sample_idx]
 
 	def _apply_transform(self, data):
 		if self.transform is None:
@@ -247,8 +250,8 @@ class Audioset(Dataset):
 
 	@functools.lru_cache(maxsize=1)
 	def __len__(self) -> int:
-		nb_total_row = sum(list(self.hdf_nb_row.values()))
-		return nb_total_row
+		n_total_row = sum(list(self.hdf_n_row.values()))
+		return n_total_row
 
 
 class SingleAudioset(Audioset):
@@ -273,14 +276,14 @@ class SingleBalancedSampler(Sampler):
 		self,
 		dataset: Audioset,
 		index_list: List[int],
-		num_max_iterations: int,
+		n_max_iterations: int,
 		shuffle: bool = True,
 		verbose: bool = False,
 	):
 		super().__init__(None)
 		self.dataset = dataset
 		self.index_list = index_list
-		self.num_max_iterations = num_max_iterations
+		self.n_max_iterations = n_max_iterations
 		self.shuffle = shuffle
 		self.verbose = verbose
 
@@ -308,18 +311,23 @@ class SingleBalancedSampler(Sampler):
 		class_indexes = [[] for _ in range(527)]
 		class_indexes: List[List[int]]
 
-		for sample_idx, target in zip(self.index_list, self.all_targets):
+		for idx, (sample_idx, target) in enumerate(zip(self.index_list, self.all_targets)):
 			target_idx = np.where(target == 1)[0]
 
 			for t_idx in target_idx:
 				class_indexes[t_idx].append(sample_idx)
+		
+		# Check if a class has no indexes
+		empty_classes = [cls_idx for cls_idx, indexes in enumerate(class_indexes) if len(indexes) == 0]
+		if len(empty_classes) > 0:
+			logging.warning(f'Found at least 1 class without any indexes. (classes={str(empty_classes)})')
 
 		return class_indexes
 
 	def _shuffle(self):
 		# Sort the file for each class
-		for i in self.sorted_sample_indexes:
-			random.shuffle(i)
+		for indexes in self.sorted_sample_indexes:
+			random.shuffle(indexes)
 
 		# Sort the class order
 		random.shuffle(self.sorted_sample_indexes)
@@ -333,13 +341,15 @@ class SingleBalancedSampler(Sampler):
 		global_index = 0
 		for cls_idx in itertools.cycle(range(527)):
 			selected_class = self.sorted_sample_indexes[cls_idx]
+			if len(selected_class) == 0:
+				continue
 			local_idx = global_index % len(selected_class)
 			global_index += 1
 
 			yield selected_class[local_idx]
 
 	def __len__(self) -> int:
-		return self.num_max_iterations
+		return self.n_max_iterations
 
 
 class ChunkAlignSampler(Sampler):
@@ -365,30 +375,30 @@ class ChunkAlignSampler(Sampler):
 
 	def _errors(self):
 		if self.batch_size <= 0:
-			raise ValueError("batch_size should be a positive value but got batch_size={}".format(self.batch_size))
+			raise ValueError('batch_size should be a positive value but got batch_size={}'.format(self.batch_size))
 
 		if not isinstance(self.drop_last, bool):
-			raise ValueError("drop_last should be a boolean value but got drop_last={}".format(self.drop_last))
+			raise ValueError('drop_last should be a boolean value but got drop_last={}'.format(self.drop_last))
 
 	def _prepare_minibatch(self):
 		# Find the number of file in every hdf file
-		hdf_nb_sample = list(self.dataset.hdf_nb_row.values())
+		hdf_n_sample = list(self.dataset.hdf_n_row.values())
 
 		# For every file, create a list of idx and drop the last mini-batch if not complete)
 		start_idx = 0
 		hdf_batches = []
 
-		for nb_sample in hdf_nb_sample:
-			indexes = np.arange(start_idx, start_idx + nb_sample)
+		for n_sample in hdf_n_sample:
+			indexes = np.arange(start_idx, start_idx + n_sample)
 
 			extra = len(indexes) % self.batch_size
 			if extra != 0:
 				indexes = indexes[:-extra]
 
-			hdf_nb_batch = len(indexes) // self.batch_size
+			hdf_n_batch = len(indexes) // self.batch_size
 
-			hdf_batches.append(np.split(indexes, hdf_nb_batch))
-			start_idx += nb_sample
+			hdf_batches.append(np.split(indexes, hdf_n_batch))
+			start_idx += n_sample
 
 		return hdf_batches
 
@@ -434,10 +444,10 @@ def batch_balancer(pool_size: int = 100, batch_size: int = 64, verbose: bool = F
 	elif batch_size == 256:
 		repeat = 230
 	else:
-		raise ValueError(f"Balancer is configure to work with batch_size equal to {valid_batch_size}")
+		raise ValueError(f'Balancer is configure to work with batch_size equal to {valid_batch_size}')
 
 	if verbose:
-		print(f"parameters 'repeat' set to: {repeat}")
+		print(f'parameters "repeat" set to: {repeat}')
 
 	def balance(data: list):
 
@@ -492,7 +502,7 @@ def get_all_targets(dataset: Audioset):
 	"""
 	all_targets = []
 
-	if dataset.version == "unbalanced":
+	if dataset.version == 'unbalanced':
 		return dataset.targets
 
 	for i in trange(len(dataset)):
@@ -511,11 +521,11 @@ def get_class_sum(all_targets, batch_indexes: list) -> np.ndarray:
 def display_statistics(stats: list):
 	cols = list(stats[0].keys())
 
-	header_form = " {:^12.12} |" * len(cols)
-	# value_form = " {:<12.4e} |" * len(cols)
+	header_form = ' {:^12.12} |' * len(cols)
+	# value_form = ' {:<12.4e} |' * len(cols)
 
 	print(header_form.format(*cols))
-	print("-" * 13 * (len(cols) + 1))
+	print('-' * 13 * (len(cols) + 1))
 
 	for stat in stats:
 		values = list(stat.values())
@@ -523,11 +533,11 @@ def display_statistics(stats: list):
 
 		for v in values:
 			if isinstance(v, int) and len(str(v)) > 12:
-				value_form += " {:>12.4e} |"
+				value_form += ' {:>12.4e} |'
 			elif isinstance(v, float):
-				value_form += " {:>12.4f} |"
+				value_form += ' {:>12.4f} |'
 			elif isinstance(v, int):
-				value_form += " {:>12d} |"
+				value_form += ' {:>12d} |'
 			else:
 				pass
 
@@ -564,8 +574,8 @@ def class_balance_split(
 	batch_size: int = 64,
 	verbose: bool = False,
 ) -> Tuple[List[int], List[int]]:
-	"""Perform supervised / unsupervised split "equally" distributed within each class.
-	In order to achieve some balancing, the "chunked" HDf features can't be used. Each files
+	"""Perform supervised / unsupervised split 'equally' distributed within each class.
+	In order to achieve some balancing, the 'chunked' HDf features can't be used. Each files
 	will be fetch individually. The speed will be greatly reduce.
 	"""
 
@@ -598,7 +608,7 @@ def class_balance_split(
 		return list(range(len(dataset))), []
 
 	# get all dataset targets and compute original class distribution metrics
-	if dataset.version == "unbalanced":
+	if dataset.version == 'unbalanced':
 		all_targets = dataset.targets
 	else:
 		all_targets = get_all_targets(dataset)
@@ -609,7 +619,7 @@ def class_balance_split(
 	s_expected_occur = np.ceil(total_occur * supervised_ratio)
 	u_expected_occur = np.ceil(total_occur * unsupervised_ratio)
 	if verbose:
-		print("s expected occur: ", sum(s_expected_occur))
+		print('s expected occur: ', sum(s_expected_occur))
 
 	# loop through the dataset and constitute the two subset.
 	remaining_sample = list(zip(all_targets, all_targets_idx))
@@ -661,12 +671,12 @@ class BatchSamplerFromList(Sampler):
 
 
 # Supervised Dataloaders build example :
-# def get_supervised(version: str = "unbalanced", **kwargs):
+# def get_supervised(version: str = 'unbalanced', **kwargs):
 # 	def supervised(
 # 			dataset_root: str,
 # 			rdcc_nbytes: int = 512 * 1024 ** 2,
 # 			data_shape: tuple = (64, 500,),
-# 			data_key: str = "data",
+# 			data_key: str = 'data',
 #
 # 			train_transform: Module = None,
 # 			val_transform: Module = None,
@@ -676,7 +686,7 @@ class BatchSamplerFromList(Sampler):
 # 			unsupervised_ratio: float = None,
 # 			balance: bool = True,
 #
-# 			num_workers: int = 10,
+# 			n_workers: int = 10,
 # 			pin_memory: bool = False,
 #
 # 			**kwargs
@@ -684,7 +694,7 @@ class BatchSamplerFromList(Sampler):
 #
 # 		# Dataset parameters
 # 		d_params = dict(
-# 			root=os.path.join(dataset_root, "AudioSet/hdfs/mel_64x500"),
+# 			root=os.path.join(dataset_root, 'AudioSet/hdfs/mel_64x500'),
 # 			rdcc_nbytes=rdcc_nbytes,
 # 			data_shape=data_shape,
 # 			data_key=data_key,
@@ -692,12 +702,12 @@ class BatchSamplerFromList(Sampler):
 #
 # 		# Dataloader parameters
 # 		l_params = dict(
-# 			num_workers=num_workers,
+# 			n_workers=n_workers,
 # 			pin_memory=pin_memory,
 # 		)
 #
 # 		# validation subset
-# 		val_dataset = SingleAudioset(**d_params, version="eval", transform=val_transform)
+# 		val_dataset = SingleAudioset(**d_params, version='eval', transform=val_transform)
 # 		#         val_indexes = list(range(len(val_dataset)))
 # 		#         val_sampler = SingleBalancedSampler(val_dataset, val_indexes, shuffle=True)
 # 		val_loader = DataLoader(val_dataset, batch_size=batch_size, **l_params)

@@ -1,0 +1,10 @@
+# @package _group_
+
+name: "MixUp"
+acronym: "mu"
+
+activation: "softmax"
+criterion: "CrossEntropy"
+reduction: "mean"
+augm_train: "identity"
+alpha: 0.4

@@ -1,0 +1,7 @@
+# @package _group_
+
+name: "MobileNetV1Rot"
+acronym: "MNV1Rot"
+
+n_classes: ${dataset.n_classes}
+rot_size: 4

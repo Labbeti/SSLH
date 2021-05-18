@@ -1,18 +1,19 @@
 
+from torch.nn import Module
 from typing import Dict, Tuple
-from mlu.metrics import Metric, CategoricalAccuracy, UAR, AveragePrecision
+from mlu.metrics import AveragePrecision, CategoricalAccuracy, UAR
 
 
-def get_metrics_pvc() -> Tuple[Dict[str, Metric], Dict[str, Metric], Dict[str, Metric]]:
+def get_metrics_pvc() -> Tuple[Dict[str, Module], Dict[str, Module], Dict[str, Module]]:
 	train_metrics = {
-		"acc": CategoricalAccuracy(),
+		'acc': CategoricalAccuracy(),
 	}
 	val_metrics = {
-		"acc": CategoricalAccuracy(),
+		'acc': CategoricalAccuracy(),
 	}
 	val_metrics_stack = {
-		"acc": CategoricalAccuracy(),
-		"mAP": AveragePrecision(),
-		"uar": UAR(),
+		'acc': CategoricalAccuracy(),
+		'mAP': AveragePrecision(),
+		'uar': UAR(),
 	}
 	return train_metrics, val_metrics, val_metrics_stack

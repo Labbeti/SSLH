@@ -1,23 +1,39 @@
 
-from pytorch_lightning.metrics import AveragePrecision
+from torch.nn import Module
 from typing import Dict, Tuple
-from mlu.metrics import Metric, FScore, AveragePrecision, RocAuc, DPrime, BinaryAccuracy
+
+from mlu.metrics import (
+	AveragePrecision,
+	BinaryAccuracy,
+	BCEMetric,
+	DPrime,
+	FScore,
+	Recall,
+	RocAuc,
+	Precision,
+)
 
 
-def get_metrics_ads() -> Tuple[Dict[str, Metric], Dict[str, Metric], Dict[str, Metric]]:
+def get_metrics_ads() -> Tuple[Dict[str, Module], Dict[str, Module], Dict[str, Module]]:
+	threshold = 0.5
+	thresholds = dict(threshold_input=threshold, threshold_target=threshold)
+
 	train_metrics = {
-		"f1": FScore(threshold_input=0.5),
-		"binacc": BinaryAccuracy(threshold_input=0.5),
+		'f1': FScore(**thresholds),
+		'bce': BCEMetric(),
 	}
 	val_metrics = {
-		"f1": FScore(threshold_input=0.5),
-		"binacc": BinaryAccuracy(threshold_input=0.5),
+		'f1': FScore(**thresholds),
+		'bce': BCEMetric(),
 	}
 	val_metrics_stack = {
-		"f1": FScore(threshold_input=0.5),
-		"binacc": BinaryAccuracy(threshold_input=0.5),
-		"mAP": AveragePrecision(),
-		"auc": RocAuc(),
-		"dprime": DPrime(),
+		'f1': FScore(**thresholds),
+		'bce': BCEMetric(),
+		'binacc': BinaryAccuracy(**thresholds),
+		'recall': Recall(**thresholds),
+		'precision': Precision(**thresholds),
+		'mAP': AveragePrecision(),
+		'auc': RocAuc(),
+		'dprime': DPrime(),
 	}
 	return train_metrics, val_metrics, val_metrics_stack

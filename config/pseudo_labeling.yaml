@@ -1,0 +1,17 @@
+# @package _global_
+
+defaults:
+  - common
+  - hydra/job_logging: custom
+  - dataset: esc10
+  - model: wideresnet28
+  - optim: adam
+  - path: default
+  - sched: softcosine
+  - expt: pseudo_labeling
+  - warmup: none
+
+bsize_s: 30
+bsize_u: 30
+ratio_s: 0.1
+ratio_u: 0.9

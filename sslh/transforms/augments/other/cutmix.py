@@ -18,11 +18,11 @@ class CutMix(Module):
 		"""
 			Apply CutMix strategy.
 
-			:param batch_a: Shape (bsize, nb_channels, width, height)
-			:param batch_b: Shape (bsize, nb_channels, width, height)
-			:param label_a: Shape (bsize, nb_classes)
-			:param label_b: Shape (bsize, nb_classes)
-			:return: The image mixed and his label respectively of shapes (bsize, nb_channels, width, height) and (bsize, nb_classes).
+			:param batch_a: Shape (bsize, n_channels, width, height)
+			:param batch_b: Shape (bsize, n_channels, width, height)
+			:param label_a: Shape (bsize, n_classes)
+			:param label_b: Shape (bsize, n_classes)
+			:return: The image mixed and his label respectively of shapes (bsize, n_channels, width, height) and (bsize, n_classes).
 		"""
 		assert batch_a.shape == batch_b.shape and label_a.shape == label_b.shape
 

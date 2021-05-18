@@ -6,7 +6,7 @@ from typing import Any, Protocol
 
 class Steppable(Protocol):
 	def step(self, trainer: Trainer, pl_module: LightningModule, outputs: Any, **kwargs):
-		raise NotImplementedError("Protocol abstract method")
+		raise NotImplementedError('Protocol abstract method')
 
 
 class CallbackWrapper(Callback):

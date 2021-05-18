@@ -50,13 +50,13 @@ def class_balance_split(
 		return one_hot
 
 	def fill_subset(remaining_samples, expected):
-		nb_classes = len(COMPARE2021PRSBase.CLASSES)
+		n_classes = len(COMPARE2021PRSBase.CLASSES)
 
-		subset_occur = numpy.zeros(shape=(nb_classes,))
+		subset_occur = numpy.zeros(shape=(n_classes,))
 		subset = []
 
 		with tqdm(total=sum(expected)) as progress:
-			for class_idx in range(nb_classes):
+			for class_idx in range(n_classes):
 				idx = 0
 				while idx < len(remaining_samples) and subset_occur[class_idx] < expected[class_idx]:
 					if remaining_samples[idx][0][class_idx] == 1:
@@ -89,7 +89,7 @@ def class_balance_split(
 
 	if verbose:
 		print('s_expected_occur: ', s_expected_occur)
-		print("sum s expected occur: ", sum(s_expected_occur))
+		print('sum s expected occur: ', sum(s_expected_occur))
 
 	all_sample = list(zip(all_targets, all_target_idx))
 	s_subset, remaining_sample = fill_subset(all_sample, s_expected_occur)
@@ -99,20 +99,20 @@ def class_balance_split(
 
 
 class IterationBalancedSampler(Sampler):
-	def __init__(self, dataset: ComParE2021PRS, index_list: List[int], nb_max_samples: int, shuffle: bool = True):
+	def __init__(self, dataset: ComParE2021PRS, index_list: List[int], n_max_samples: int, shuffle: bool = True):
 		super().__init__(None)
 		self.dataset = dataset
 		self.index_list = index_list
-		self.nb_max_samples = nb_max_samples
+		self.n_max_samples = n_max_samples
 		self.shuffle = shuffle
 
 		self.all_targets = dataset.subsets_info['target']
 		self.sorted_sample_indexes = self._sort_per_class()
 
 	def _sort_per_class(self) -> List[List[int]]:
-		nb_classes = len(COMPARE2021PRSBase.CLASSES)
+		n_classes = len(COMPARE2021PRSBase.CLASSES)
 
-		class_indexes = [[] for _ in range(nb_classes)]
+		class_indexes = [[] for _ in range(n_classes)]
 		class_indexes: List[List[int]]
 
 		for sample_idx, target in zip(self.index_list, self.all_targets):
@@ -132,7 +132,7 @@ class IterationBalancedSampler(Sampler):
 		random.shuffle(self.sorted_sample_indexes)
 
 	def __len__(self) -> int:
-		return self.nb_max_samples
+		return self.n_max_samples
 
 	def __iter__(self):
 		""" Round Robin algorithm to fetch file one by one from each class.
@@ -140,10 +140,10 @@ class IterationBalancedSampler(Sampler):
 		if self.shuffle:
 			self._shuffle()
 
-		nb_classes = len(COMPARE2021PRSBase.CLASSES)
+		n_classes = len(COMPARE2021PRSBase.CLASSES)
 
 		global_index = 0
-		for cls_idx in itertools.cycle(range(nb_classes)):
+		for cls_idx in itertools.cycle(range(n_classes)):
 			# Increment the global index everytime we looped through all the classes
 			if cls_idx == 0:
 				global_index += 1
@@ -182,13 +182,13 @@ def mean_teacher(
 		train_transform: Module = None,
 		val_transform: Module = None,
 
-		num_workers: int = 4,
+		n_workers: int = 4,
 		pin_memory: bool = False,
 		seed: int = 1234,
 
 		**kwargs) -> Tuple[DataLoader, DataLoader]:
 	loader_args = {
-		'num_workers': num_workers,
+		'n_workers': n_workers,
 		'pin_memory': pin_memory,
 	}
 

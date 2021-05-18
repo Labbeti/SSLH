@@ -18,11 +18,11 @@ class CutMixSpec(Module):
 		"""
 			Apply CutMix strategy for spectrograms.
 
-			:param batch_a: Shape (bsize, time steps, nb freqs)
-			:param batch_b: Shape (bsize, time steps, nb freqs)
-			:param label_a: Shape (bsize, nb_classes)
-			:param label_b: Shape (bsize, nb_classes)
-			:return: The spectrogram mixed and his label respectively of shapes (bsize, time steps, nb freqs) and (bsize, nb_classes).
+			:param batch_a: Shape (bsize, num freqs, time steps)
+			:param batch_b: Shape (bsize, num freqs, time steps)
+			:param label_a: Shape (bsize, n_classes)
+			:param label_b: Shape (bsize, n_classes)
+			:return: The spectrogram mixed and his label respectively of shapes (bsize, time steps, num freqs) and (bsize, n_classes).
 		"""
 		assert batch_a.shape == batch_b.shape and label_a.shape == label_b.shape
 

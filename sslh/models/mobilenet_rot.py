@@ -9,8 +9,8 @@ from sslh.models.mobilenet import MobileNetV1, MobileNetV2
 
 
 class MobileNetV1Rot(MobileNetV1):
-	def __init__(self, num_classes: int, rot_size: int):
-		super().__init__(num_classes=num_classes)
+	def __init__(self, n_classes: int, rot_size: int):
+		super().__init__(n_classes=n_classes)
 		self.rot_size = rot_size
 		features_output_size = 1024
 		self.fc_rot = Linear(features_output_size, rot_size)
@@ -30,8 +30,8 @@ class MobileNetV1Rot(MobileNetV1):
 
 
 class MobileNetV2Rot(MobileNetV2):
-	def __init__(self, num_classes: int, rot_size: int):
-		super().__init__(num_classes=num_classes)
+	def __init__(self, n_classes: int, rot_size: int):
+		super().__init__(n_classes=n_classes)
 		self.rot_size = rot_size
 		features_output_size = 1024
 		self.fc_rot = Linear(features_output_size, rot_size)

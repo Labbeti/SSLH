@@ -1,0 +1,14 @@
+# @package _group_
+
+name: "FixMatchMixUp"
+acronym: "fmm"
+
+activation: "softmax"
+criterion_s: "CrossEntropy"
+criterion_u: "CrossEntropy"
+reduction: "none"
+augm_weak: "weak"
+augm_strong: "strong"
+lambda_u: 1.0
+threshold: 0.95
+alpha: 0.75

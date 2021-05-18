@@ -1,0 +1,6 @@
+# @package _group_
+
+name: "MobileNetV1"
+acronym: "MNV1"
+
+n_classes: ${dataset.n_classes}

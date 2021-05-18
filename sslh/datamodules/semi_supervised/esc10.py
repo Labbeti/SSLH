@@ -1,19 +1,20 @@
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data.dataloader import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
 from typing import Callable, List, Optional, Tuple
 
-from mlu.datasets.utils import generate_samplers_split
+from mlu.datasets.split.monolabel import balanced_split
 from mlu.datasets.wrappers import TransformDataset, NoLabelDataset
 from sslh.datamodules.utils import guess_folds
 from sslh.datasets.esc10 import ESC10
 
 
-NUM_CLASSES = 10
+N_CLASSES = 10
 FOLDS = [1, 2, 3, 4, 5]
 
 
-class ESC10SemiDataModule(LightningDataModule):
+class ESC10DataModuleSSL(LightningDataModule):
 	def __init__(
 		self,
 		dataset_root: str,
@@ -23,8 +24,8 @@ class ESC10SemiDataModule(LightningDataModule):
 		target_transform: Optional[Callable] = None,
 		bsize_train_s: int = 30,
 		bsize_train_u: int = 30,
-		num_workers_s: int = 2,
-		num_workers_u: int = 3,
+		n_workers_s: int = 2,
+		n_workers_u: int = 3,
 		drop_last: bool = True,
 		pin_memory: bool = False,
 		ratio_s: float = 0.1,
@@ -46,8 +47,8 @@ class ESC10SemiDataModule(LightningDataModule):
 			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
 			:param bsize_train_s: The batch size used for supervised train data. (default: 64)
 			:param bsize_train_u: The batch size used for unsupervised train data. (default: 64)
-			:param num_workers_s: The number of workers for supervised train dataloader. (default: 2)
-			:param num_workers_s: The number of workers for unsupervised train dataloader. (default: 3)
+			:param n_workers_s: The number of workers for supervised train dataloader. (default: 2)
+			:param n_workers_s: The number of workers for unsupervised train dataloader. (default: 3)
 			:param drop_last: If True, drop the last incomplete batch. (default: False)
 			:param pin_memory: If True, pin the memory of dataloader. (default: False)
 			:param ratio_s: The ratio of the supervised subset len in [0, 1]. (default: 0.1)
@@ -76,8 +77,8 @@ class ESC10SemiDataModule(LightningDataModule):
 		self.bsize_train_u = bsize_train_u
 		self.bsize_val = bsize_train_s + bsize_train_u
 		self.bsize_test = bsize_train_s + bsize_train_u
-		self.num_workers_s = num_workers_s
-		self.num_workers_u = num_workers_u
+		self.n_workers_s = n_workers_s
+		self.n_workers_u = n_workers_u
 		self.drop_last = drop_last
 		self.pin_memory = pin_memory
 		self.ratio_s = ratio_s
@@ -93,25 +94,35 @@ class ESC10SemiDataModule(LightningDataModule):
 
 		self.sampler_s = None
 		self.sampler_u = None
+		self.example_input_array = None
 
 	def prepare_data(self, *args, **kwargs):
 		if self.download_dataset:
-			_ = ESC10(self.dataset_root, folds=tuple(self.folds_train), download=True)
-			_ = ESC10(self.dataset_root, folds=tuple(self.folds_val), download=True)
+			_ = ESC10(self.dataset_root, folds=tuple(FOLDS), download=True)
 
 	def setup(self, stage: Optional[str] = None):
-		self.train_dataset_raw = ESC10(self.dataset_root, folds=tuple(self.folds_train), download=False)
-		self.val_dataset_raw = ESC10(self.dataset_root, folds=tuple(self.folds_val), download=False)
-		self.test_dataset_raw = None
+		if stage == 'fit':
+			self.train_dataset_raw = ESC10(root=self.dataset_root, folds=tuple(self.folds_train), download=False)
+			self.val_dataset_raw = ESC10(root=self.dataset_root, folds=tuple(self.folds_val), download=False)
 
-		# Setup split
-		ratios = [self.ratio_s, self.ratio_u]
-		self.sampler_s, self.sampler_u = generate_samplers_split(
-			dataset=self.train_dataset_raw,
-			num_classes=NUM_CLASSES,
-			ratios=ratios,
-			target_one_hot=False,
-		)
+			# Setup split
+			ratios = [self.ratio_s, self.ratio_u]
+			indexes_s, indexes_u = balanced_split(
+				dataset=self.train_dataset_raw,
+				n_classes=N_CLASSES,
+				ratios=ratios,
+				target_one_hot=False,
+			)
+			self.sampler_s = SubsetRandomSampler(indexes_s)
+			self.sampler_u = SubsetRandomSampler(indexes_u)
+
+			dataloader = self.val_dataloader()
+			xs, ys = next(iter(dataloader))
+			self.example_input_array = xs
+			self.dims = tuple(xs.shape)
+
+		elif stage == 'test':
+			self.test_dataset_raw = None
 
 	def train_dataloader(self) -> Tuple[DataLoader, ...]:
 		train_dataset_s = TransformDataset(self.train_dataset_raw, self.transform_train_s, index=0)
@@ -123,7 +134,7 @@ class ESC10SemiDataModule(LightningDataModule):
 		loader_s = DataLoader(
 			dataset=train_dataset_s,
 			batch_size=self.bsize_train_s,
-			num_workers=self.num_workers_s,
+			num_workers=self.n_workers_s,
 			sampler=self.sampler_s,
 			drop_last=self.drop_last,
 			pin_memory=self.pin_memory,
@@ -131,7 +142,7 @@ class ESC10SemiDataModule(LightningDataModule):
 		loader_u = DataLoader(
 			dataset=train_dataset_u,
 			batch_size=self.bsize_train_u,
-			num_workers=self.num_workers_u,
+			num_workers=self.n_workers_u,
 			sampler=self.sampler_u,
 			drop_last=self.drop_last,
 			pin_memory=self.pin_memory,
@@ -155,7 +166,7 @@ class ESC10SemiDataModule(LightningDataModule):
 		loader = DataLoader(
 			dataset=val_dataset,
 			batch_size=self.bsize_val,
-			num_workers=self.num_workers_s + self.num_workers_u,
+			num_workers=self.n_workers_s + self.n_workers_u,
 			drop_last=False,
 		)
 		return loader
@@ -171,7 +182,7 @@ class ESC10SemiDataModule(LightningDataModule):
 		loader = DataLoader(
 			dataset=test_dataset,
 			batch_size=self.bsize_test,
-			num_workers=self.num_workers_s + self.num_workers_u,
+			num_workers=self.n_workers_s + self.n_workers_u,
 			drop_last=False,
 		)
 		return loader

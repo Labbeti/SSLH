@@ -1,0 +1,18 @@
+# @package _group_
+
+name: "ReMixMatchNoRot"
+acronym: "rmmnr"
+
+activation: "softmax"
+criterion_s: "CrossEntropy"
+criterion_u: "CrossEntropy"
+criterion_u1: "CrossEntropy"
+reduction: "mean"
+augm_weak: "weak"
+augm_strong: "strong"
+alpha: 0.75
+history: 128
+lambda_u: 1.5
+lambda_u1: 0.5
+n_augms: 2
+temperature: 0.5

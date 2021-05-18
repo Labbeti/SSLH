@@ -1,10 +1,9 @@
 # @package _group_
 
-logdir: "../boards"
-
 ads: "/tmpdir/cances/corpus/AudioSet/hdfs"
 cifar10: "/tmpdir/labbe/corpus/CIFAR10"
 esc10: "/tmpdir/labbe/corpus/ESC10"
+fsd50k: null
 gsc: "/tmpdir/labbe/corpus/GSC"
 pvc: "/tmpdir/labbe/corpus/PVC"
 ubs8k: "/tmpdir/cances/corpus/UrbanSound8K"

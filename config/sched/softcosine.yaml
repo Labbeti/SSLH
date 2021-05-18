@@ -1,5 +1,5 @@
 # @package _group_
 
-name: "SoftCosine"
-fullname: "SoftCosineScheduler"
-on_epoch: true
+name: "SoftCosineScheduler"
+acronym: "softcosine"
+on_epoch: ${dataset.log_on_epoch}

@@ -11,7 +11,7 @@ class MixUpSharp(MixUpModule):
 
 	def forward(self, xa: Tensor, xb: Tensor, ya: Tensor, yb: Tensor) -> (Tensor, Tensor):
 		if xa.shape != xb.shape or ya.shape != yb.shape:
-			raise RuntimeError("Invalid shapes for MixUp : ({:s} != {:s} or {:s} != {:s})".format(
+			raise RuntimeError('Invalid shapes for MixUp : ({:s} != {:s} or {:s} != {:s})'.format(
 				xa.shape, xb.shape, ya.shape, yb.shape))
 
 		self._lambda = self._sample()

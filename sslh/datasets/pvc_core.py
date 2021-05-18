@@ -27,7 +27,7 @@ class COMPARE2021PRSBase(Dataset):
 		self.wav_dir = os.path.join(self.root, 'ComParE2021_PRS', 'dist', 'wav')
 
 		if not osp.isdir(root):
-			raise RuntimeError(f"Invalid root dirpath '{root}'.")
+			raise RuntimeError(f'Invalid root dirpath "{root}".')
 
 	def __getitem__(self, idx: int) -> Tuple[Tensor, int]:
 		audio_name = self.subsets_info['audio_names'][idx]
@@ -62,7 +62,7 @@ class COMPARE2021PRSBase(Dataset):
 
 		csv_root = os.path.join(self.root, 'ComParE2021_PRS', 'dist', 'lab')
 		if not osp.isdir(csv_root):
-			raise RuntimeError(f"Invalid CSV root dirpath '{csv_root}'.")
+			raise RuntimeError(f'Invalid CSV root dirpath "{csv_root}".')
 
 		if self.subset == 'train':
 			return read_csv(os.path.join(csv_root, 'train.csv'))

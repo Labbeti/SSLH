@@ -3,54 +3,49 @@ import torch
 
 from torch.nn import Sequential
 from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
-from typing import Callable, Optional
+from typing import Callable
 
 from mlu.nn import UnSqueeze
-from mlu.transforms import Identity, ToTensor
+from mlu.transforms import ToTensor
 from sslh.transforms.self_transforms.audio import get_self_transform_flips
-from sslh.transforms.pools.audio import get_weak_augm_pool, get_strong_augm_pool
+from sslh.transforms.pools.audio import get_pool
 from sslh.transforms.utils import compose_augment
 
 
-def get_transform_ads(transform_name: str) -> Callable:
-	if transform_name == "weak":
-		pool = get_weak_augm_pool()
-	elif transform_name == "strong":
-		pool = get_strong_augm_pool()
-	elif transform_name == "identity":
-		pool = []
-	else:
-		raise RuntimeError(f"Unknown transform name '{transform_name}'.")
+def get_transform_ads(
+	augment_name: str,
+	n_mels: int = 64,
+	n_time: int = 500,
+	n_fft: int = 2048,
+	pre_computed_specs: bool = False,
+) -> Callable:
+	# Get the augment pool
+	pool = get_pool(augment_name)
 
-	augment = compose_augment(pool, get_transform_to_spec_ads(), get_pre_transform_ads(), get_post_transform_ads())
+	# Spectrogram shape : (channels, freq, time) = (1, 64, 501)
+	if pre_computed_specs:
+		if not all(input_type == 'spectrogram' for input_type, _ in pool):
+			raise RuntimeError('Use pre-computed spectrogram is True but augment pool contains waveform augments.')
+		transform_to_spec = None
+	else:
+		waveform_length = 10  # seconds
+		sample_rate = 32000
+		hop_length = sample_rate * waveform_length // n_time
+		transform_to_spec = Sequential(
+			MelSpectrogram(sample_rate=sample_rate, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels),
+			AmplitudeToDB(),
+		)
+
+	pre_transform = ToTensor(dtype=torch.float)
+	post_transform = UnSqueeze(dim=0)
+
+	augment = compose_augment(pool, transform_to_spec, pre_transform, post_transform)
 	return augment
 
 
-def get_pre_transform_ads() -> Optional[Callable]:
+def get_target_transform_ads(**kwargs) -> Callable:
 	return ToTensor(dtype=torch.float)
 
 
-def get_post_transform_ads() -> Optional[Callable]:
-	return UnSqueeze(dim=0)
-
-
-def get_transform_to_spec_ads() -> Optional[Callable]:
-	# Spectrogram of shape (64, 500)
-	n_mels = 64
-	n_time = 500
-	sr = 32000
-	n_fft = 2048
-	hop_length = sr * 10 // n_time
-
-	return Sequential(
-		MelSpectrogram(sample_rate=sr, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels),
-		AmplitudeToDB(),
-	)
-
-
-def get_target_transform_ads() -> Callable:
-	return Identity()
-
-
-def get_self_transform_ads() -> Callable:
+def get_self_transform_ads(**kwargs) -> Callable:
 	return get_self_transform_flips()

@@ -1,14 +1,23 @@
 # @package _group_
 
-name: "ADS"
-fullname: "AudioSet"
-num_classes: 527
+name: "AudioSet"
+acronym: "ADS"
+
+n_classes: 527
 root: ${path.ads}
-monitor: "val/fscore"
+monitor: "val/f1"
 monitor_mode: "max"
-val_check_interval: 10000
+val_check_interval: 5000
 log_on_epoch: false
 sample_rate: 32000
 
+n_train_steps: 125000
 train_subset: "unbalanced"
-nb_train_steps: 125000
+sampler_s_balanced: true
+pre_computed_specs: false
+
+transform:
+  n_mels: 64
+  n_time: 500
+  n_fft: 2048
+  pre_computed_specs: ${dataset.pre_computed_specs}

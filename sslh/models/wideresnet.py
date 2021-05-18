@@ -1,5 +1,5 @@
 """
-	WideResNet 28-2 based on pytorch implementation.
+	WideResNet 28 based on pytorch implementation of ResNet.
 """
 
 import torch
@@ -76,9 +76,9 @@ class WideResNet(nn.Module):
 	def __init__(
 		self,
 		layers: List[int],
-		num_classes: int,
+		n_classes: int,
 		width: int = 2,
-		num_input_channels: int = 3,
+		n_input_channels: int = 3,
 		zero_init_residual: bool = False,
 		groups: int = 1,
 		width_per_group: int = 16,
@@ -99,11 +99,13 @@ class WideResNet(nn.Module):
 			# the 2x2 stride with a dilated convolution instead
 			replace_stride_with_dilation = [False, False, False]
 		if len(replace_stride_with_dilation) != 3:
-			raise ValueError("replace_stride_with_dilation should be None or a 3-element tuple, got {}".format(replace_stride_with_dilation))
+			raise ValueError(
+				'replace_stride_with_dilation should be None or a 3-element tuple, got {}'.format(replace_stride_with_dilation)
+			)
 		self.groups = groups
 		self.base_width = width_per_group
 		self.conv1 = nn.Conv2d(
-			num_input_channels, self.in_planes, kernel_size=3, stride=1, padding=1, bias=False)
+			n_input_channels, self.in_planes, kernel_size=3, stride=1, padding=1, bias=False)
 		self.bn1 = norm_layer(self.in_planes)
 		self.relu = nn.ReLU(inplace=True)
 		self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -115,7 +117,7 @@ class WideResNet(nn.Module):
 			block, 64*width, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
 
 		self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-		self.fc = nn.Linear(64 * width * block.expansion, num_classes)
+		self.fc = nn.Linear(64 * width * block.expansion, n_classes)
 
 		for m in self.modules():
 			if isinstance(m, nn.Conv2d):

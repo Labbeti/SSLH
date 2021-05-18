@@ -1,28 +1,32 @@
 # Deep Semi-Supervised Learning with Holistic methods (SSLH)
 
-Unofficial PyTorch and PyTorch-Lightning implementations of 4 Deep Semi-Supervised Learning methods :
+Unofficial PyTorch and PyTorch-Lightning implementations of Deep Semi-Supervised Learning methods for audio tagging.
+
+There is 4 SSL method :
 - [FixMatch (FM)](https://arxiv.org/pdf/2001.07685.pdf)
 - [MixMatch (MM)](https://arxiv.org/pdf/1905.02249.pdf)
 - [ReMixMatch (RMM)](https://arxiv.org/pdf/1911.09785.pdf)
 - [Unsupervised Data Augmentation (UDA)](https://arxiv.org/pdf/1904.12848.pdf)
 
-For the 6 datasets :
-- [AudioSet (ADS)](https://static.googleusercontent.com/media/research.google.com/fr//pubs/archive/45857.pdf)
+For the following datasets :
+
+[comment]: <> (- [AudioSet &#40;ADS&#41;]&#40;https://static.googleusercontent.com/media/research.google.com/fr//pubs/archive/45857.pdf&#41;)
 - [CIFAR-10 (CIFAR10)](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf)
-- [ESC-10 (ESC10)](https://www.karolpiczak.com/papers/Piczak2015-ESC-Dataset.pdf)  
+- [ESC-10 (ESC10)](https://www.karolpiczak.com/papers/Piczak2015-ESC-Dataset.pdf)
+
+[comment]: <> (- [FSD50K]&#40;&#41;)
 - [Google Speech Commands (GSC)](https://arxiv.org/pdf/1804.03209.pdf)
 - [Primate Vocalization Corpus (PVC)](https://arxiv.org/pdf/2101.10390.pdf)
 - [UrbanSound8k (UBS8K)](http://www.justinsalamon.com/uploads/4/3/9/4/4394963/salamon_urbansound_acmmm14.pdf)
 
-The models available are WideResNet28, MobileNetV1 and MobileNetV2.
-The implementation of Mean Teacher (MT) and Deep Co-Training (DCT) are still in development.
+With 3 models :
+- [WideResNet28 (WRN28)](https://arxiv.org/pdf/1605.07146.pdf)
+- [MobileNetV1 (MNV1)](https://arxiv.org/pdf/1704.04861.pdf)
+- [MobileNetV2 (MNV2)](https://arxiv.org/pdf/1801.04381.pdf)
+
+The implementation of Mean Teacher (MT), Deep Co-Training (DCT) and Pseudo-Labeling (PL) are still in development.
 
 ## Installation
-#### Prerequisites
-- Make sure you have access to the following repositories : 
-  - For UrbanSound8k dataset : https://github.com/leocances/UrbanSound8K (created by Léo Cances)
-  - For utility functions and classes : https://github.com/Labbeti/MLU
-
 #### Download & setup
 - Clone the repository :
 ```bash
@@ -63,7 +67,9 @@ AudioSet (ADS) and Primate Vocalize Corpus (PVC) cannot be installed automatical
 The main scripts available are in directory ```standalone``` :
 ```
 standalone
+├── deep_co_training.py
 ├── fixmatch.py
+├── mean_teacher.py
 ├── mixmatch.py
 ├── mixup.py
 ├── remixmatch.py
@@ -80,12 +86,12 @@ python mixmatch.py dataset=esc10
 
 Example 2 : Supervised+Weak on GSC
 ```bash
-python supervised.py dataset=gsc experiment.augm_train=weak bsize=256 epochs=300
+python supervised.py dataset=gsc expt.augm_train=weak bsize=256 epochs=300
 ```
 
 Example 3 : FixMatch+MixUp on UBS8K
 ```bash
-python fixmatch.py dataset=ubs8K dataset.root="../data/UBS8K" experiment=fixmatch_mixup bsize_s=128 bsize_u=128 epochs=300
+python fixmatch.py dataset=ubs8K dataset.root="../data/UBS8K" expt=fixmatch_mixup bsize_s=128 bsize_u=128 epochs=300
 ```
 (note: default folds used are in "config/dataset/ubs8k.yaml")
 
@@ -99,7 +105,9 @@ sslh
 │     └── semi_supervised
 ├── datasets
 ├── experiments
+│     ├── deep_co_training
 │     ├── fixmatch
+│     ├── mean_teacher
 │     ├── mixmatch
 │     ├── mixup
 │     ├── remixmatch
@@ -130,10 +138,10 @@ It contains also some code from the following authors :
 | Acronym | Description |
 | --- | --- |
 | activation | Activation function |
-| ADS | AudioSet dataset |
+| ADS | AudioSet |
 | aug, augm, augment | Augmentation |
 | ce | Cross-Entropy |
-| exp | Experimental |
+| expt | Experiment |
 | fm | FixMatch |
 | fn, func | Function |
 | GSC | Google Speech Commands dataset (with 35 classes) |

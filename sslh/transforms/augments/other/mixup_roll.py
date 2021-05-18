@@ -22,9 +22,9 @@ class MixUpRoll(Module):
 
 	def forward(self, batch_a: Tensor, batch_b: Tensor, labels_a: Tensor, labels_b: Tensor) -> (Tensor, Tensor):
 		if batch_a.shape != batch_b.shape:
-			raise RuntimeError(f"Mismatch between batch shapes for MixUpRoll : ({batch_a.shape} != {batch_b.shape})")
+			raise RuntimeError(f'Mismatch between batch shapes for MixUpRoll : ({batch_a.shape} != {batch_b.shape})')
 		if labels_a.shape != labels_b.shape:
-			raise RuntimeError(f"Mismatch between label shapes for MixUpRoll : ({labels_a.shape} != {labels_b.shape})")
+			raise RuntimeError(f'Mismatch between label shapes for MixUpRoll : ({labels_a.shape} != {labels_b.shape})')
 
 		# Sample from Beta distribution
 		self._lambda = self._beta.sample().item() if self.alpha > 0.0 else 1.0

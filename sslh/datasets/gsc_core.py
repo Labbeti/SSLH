@@ -18,15 +18,15 @@ from torchaudio.datasets.utils import (
 )
 from typing import Tuple
 
-FOLDER_IN_ARCHIVE = "SpeechCommands"
-URL = "speech_commands_v0.02"
-HASH_DIVIDER = "_nohash_"
-EXCEPT_FOLDER = ["_background_noise_", "silence"]
+FOLDER_IN_ARCHIVE = 'SpeechCommands'
+URL = 'speech_commands_v0.02'
+HASH_DIVIDER = '_nohash_'
+EXCEPT_FOLDER = ['_background_noise_', 'silence']
 _CHECKSUMS = {
-	"https://storage.googleapis.com/download.tensorflow.org/data/speech_commands_v0.01.tar.gz":
-		"3cd23799cb2bbdec517f1cc028f8d43c",
-	"https://storage.googleapis.com/download.tensorflow.org/data/speech_commands_v0.02.tar.gz":
-		"6b74f3901214cb2c2934e98196829835",
+	'https://storage.googleapis.com/download.tensorflow.org/data/speech_commands_v0.01.tar.gz':
+		'3cd23799cb2bbdec517f1cc028f8d43c',
+	'https://storage.googleapis.com/download.tensorflow.org/data/speech_commands_v0.02.tar.gz':
+		'6b74f3901214cb2c2934e98196829835',
 }
 
 
@@ -44,9 +44,9 @@ class SPEECHCOMMANDS(Dataset):
 		transform: Module = None
 	) -> None:
 
-		if url in ["speech_commands_v0.01", "speech_commands_v0.02"]:
-			base_url = "https://storage.googleapis.com/download.tensorflow.org/data/"
-			ext_archive = ".tar.gz"
+		if url in ['speech_commands_v0.01', 'speech_commands_v0.02']:
+			base_url = 'https://storage.googleapis.com/download.tensorflow.org/data/'
+			ext_archive = '.tar.gz'
 
 			url = os.path.join(base_url, url + ext_archive)
 
@@ -56,7 +56,7 @@ class SPEECHCOMMANDS(Dataset):
 
 		self.basename = os.path.basename(url)
 
-		basename = self.basename.rsplit(".", 2)[0]
+		basename = self.basename.rsplit('.', 2)[0]
 		folder_in_archive = os.path.join(FOLDER_IN_ARCHIVE, basename)
 
 		self._path = os.path.join(root, folder_in_archive)
@@ -85,9 +85,8 @@ class SPEECHCOMMANDS(Dataset):
 
 		# Is the comprehension list readable enough?
 		list_commands = [
-			dir for dir in os.listdir(self._path)
-			if os.path.isdir(os.path.join(self._path, dir))
-			   and dir not in EXCEPT_FOLDER
+			dir_ for dir_ in os.listdir(self._path)
+			if os.path.isdir(os.path.join(self._path, dir_)) and dir_ not in EXCEPT_FOLDER
 		]
 		list_commands.sort()
 
@@ -97,7 +96,7 @@ class SPEECHCOMMANDS(Dataset):
 			list_files = [
 				os.path.join(command_path, f)
 				for f in os.listdir(command_path)
-				if f[-4:] == ".wav"
+				if f[-4:] == '.wav'
 			]
 			list_files.sort()
 
@@ -110,12 +109,11 @@ class SPEECHCOMMANDS(Dataset):
 		archive_path = os.path.join(self.root, self.basename)
 
 		if self._check_integrity(self._path):
-			print("Dataset already download and verified")
+			print('Dataset already download and verified')
 
 		else:
 			checksum = _CHECKSUMS.get(self.url, None)
-			download_url(self.url, self.root, hash_value=checksum,
-						 hash_type="md5")
+			download_url(self.url, self.root, hash_value=checksum, hash_type='md5')
 			extract_archive(archive_path, self._path)
 
 	def _check_integrity(self, path, checksum=None) -> bool:
@@ -126,7 +124,7 @@ class SPEECHCOMMANDS(Dataset):
 		if not os.path.isdir(path):
 			return False
 
-		# TODO add checksum verification
+		# add checksum verification
 		return True
 
 	def _load_item(self, filepath: str, path: str) -> Tuple[Tensor, int, str,

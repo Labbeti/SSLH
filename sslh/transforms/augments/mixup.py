@@ -10,12 +10,12 @@ class MixUpModule(Module):
 
 		Code overview :
 
-		lambda ~ Beta(alpha, alpha) \n
-		lambda = max(lambda, 1 - lambda) \n
-		batch = batch_a * lambda + batch_b * (1 - lambda) \n
-		label = label_a * lambda + label_b * (1 - lambda) \n
+		>>> lambda ~ Beta(alpha, alpha)
+		>>> lambda = max(lambda, 1 - lambda)
+		>>> batch = batch_a * lambda + batch_b * (1 - lambda)
+		>>> label = label_a * lambda + label_b * (1 - lambda)
 
-		Note:
+		Notes:
 			- if alpha -> 0 and apply_max == True, lambda sampled near 1,
 			- if alpha -> 1 and apply_max == True, lambda sampled from an uniform distribution in [0.5, 1.0],
 			- if alpha -> 0 and apply_max == False, lambda sampled near 1 or 0,
@@ -27,7 +27,7 @@ class MixUpModule(Module):
 			Build the MixUp Module.
 
 			:param alpha: Controls the Beta distribution used to sampled the coefficient lambda. (default: 0.4)
-			:param apply_max: If True, apply the "lambda = max(lambda, 1 - lambda)" after the sampling of lambda. (default: False)
+			:param apply_max: If True, apply the 'lambda = max(lambda, 1 - lambda)' after the sampling of lambda. (default: False)
 				This operation is useful for having a mixed batch near to the first batch passed as input.
 				It was set to True in MixMatch training but not in original MixUp training.
 		"""
@@ -43,7 +43,7 @@ class MixUpModule(Module):
 			Apply MixUp to batches and labels.
 		"""
 		if xa.shape != xb.shape or ya.shape != yb.shape:
-			raise RuntimeError("Invalid shapes for MixUp : ({} != {} or {} != {})".format(
+			raise RuntimeError('Invalid shapes for MixUp : ({} != {} or {} != {})'.format(
 				xa.shape, xb.shape, ya.shape, yb.shape))
 
 		# Sample from Beta distribution

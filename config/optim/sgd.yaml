@@ -1,0 +1,7 @@
+# @package _group_
+
+name: "SGD"
+lr: 1e-3
+weight_decay: 0.0
+momentum: 0.0
+nesterov: false

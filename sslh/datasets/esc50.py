@@ -18,22 +18,22 @@ from typing import Tuple
 
 # Download URL and checksums
 URL = {
-	"esc10-10": "https://github.com/karoldvl/ESC-50/archive/master.zip",
-	"esc10-50": "https://github.com/karoldvl/ESC-50/archive/master.zip",
-	# "esc10-us": None,
+	'esc10-10': 'https://github.com/karoldvl/ESC-50/archive/master.zip',
+	'esc10-50': 'https://github.com/karoldvl/ESC-50/archive/master.zip',
+	# 'esc10-us': None,
 }
 
 _CHECKSUMS = {
-	"esc10-10": None,
-	"esc10-50": None,
-	# "esc10-us": None,
+	'esc10-10': None,
+	'esc10-50': None,
+	# 'esc10-us': None,
 }
 
 # Constant
-ARCHIVE_BASENAME = "ESC-50-master"
-FOLDER_IN_ARCHIVE = "ESC-50-master"
-AUDIO_FOLDER = "audio"
-META_FOLDER = "meta"
+ARCHIVE_BASENAME = 'ESC-50-master'
+FOLDER_IN_ARCHIVE = 'ESC-50-master'
+AUDIO_FOLDER = 'audio'
+META_FOLDER = 'meta'
 AVAILABLE_VERSION = list(URL.keys())
 
 # Default parameters
@@ -42,7 +42,7 @@ FOLDS = (1, 2, 3, 4, 5)
 
 def cache_feature(func):
 	def decorator(*args, **kwargs):
-		key = ",".join(map(str, args))
+		key = ','.join(map(str, args))
 
 		if key not in decorator.cache:
 			decorator.cache[key] = func(*args, **kwargs)
@@ -80,16 +80,16 @@ class ESC50Base(Dataset):
 		self.required_folds = folds
 		self.transform = transform
 
-		self.url = URL["esc10-50"]
-		self.nb_class = 50
+		self.url = URL['esc10-50']
+		self.n_class = 50
 		self.target_directory = os.path.join(self.root, FOLDER_IN_ARCHIVE)
 
 		# Dataset must exist to continue
 		if download:
 			self.download()
 		# elif not self.check_integrity(self.target_directory):
-		#     raise RuntimeError("Dataset not found or corrupted. \n\
-		#         You can use download=True to download it.")
+		#     raise RuntimeError('Dataset not found or corrupted. \n\
+		#         You can use download=True to download it.')
 
 		# Prepare the medata
 		self._filenames = []
@@ -130,12 +130,12 @@ class ESC50Base(Dataset):
 		self._esc10s = []
 
 		# Read the csv file and remove header
-		path = os.path.join(self.target_directory, META_FOLDER, "esc50.csv")
-		with open(path, "r") as fp:
+		path = os.path.join(self.target_directory, META_FOLDER, 'esc50.csv')
+		with open(path, 'r') as fp:
 			data = fp.read().splitlines()[1:]
 
 			for line in data:
-				items = line.split(",")
+				items = line.split(',')
 
 				self._filenames.append(items[c_filename])
 				self._folds.append(int(items[c_fold]))
@@ -157,10 +157,10 @@ class ESC50Base(Dataset):
 	def download(self) -> None:
 		"""Download the dataset and extract the archive"""
 		if self.check_integrity(self.target_directory):
-			print("Dataset already downloaded and verified.")
+			print('Dataset already downloaded and verified.')
 
 		else:
-			archive_path = os.path.join(self.root, FOLDER_IN_ARCHIVE + ".zip")
+			archive_path = os.path.join(self.root, FOLDER_IN_ARCHIVE + '.zip')
 
 			download_url(self.url, self.root)
 			extract_archive(archive_path, self.root)
@@ -174,7 +174,7 @@ class ESC50Base(Dataset):
 		if not os.path.isdir(path):
 			return False
 
-		# TODO add checksum verification
+		# add checksum verification
 		return True
 
 	def load_item(self, index: int) -> Tuple[Tensor, int, int]:

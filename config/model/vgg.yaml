@@ -1,0 +1,7 @@
+# @package _group_
+
+name: "VGGLike"
+acronym: "vgg"
+
+n_classes: ${dataset.n_classes}
+in_channels: 1

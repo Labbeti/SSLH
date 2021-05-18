@@ -1,0 +1,11 @@
+# @package _group_
+
+name: "MeanTeacher"
+acronym: "mt"
+
+activation: "softmax"
+criterion_s: "CrossEntropy"
+criterion_ccost: "MSE"
+reduction: "mean"
+decay: 0.999
+lambda_ccost: 1.0

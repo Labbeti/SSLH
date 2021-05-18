@@ -31,7 +31,7 @@ def init_bn(bn):
 
 
 class MobileNetV1(nn.Module):
-	def __init__(self, num_classes: int = 527, **kwargs):
+	def __init__(self, n_classes: int = 527, **kwargs):
 		super(MobileNetV1, self).__init__()
 
 		self.bn0 = nn.BatchNorm2d(64)
@@ -82,7 +82,7 @@ class MobileNetV1(nn.Module):
 			conv_dw(1024, 1024, 1))
 
 		self.fc1 = nn.Linear(1024, 1024, bias=True)
-		self.fc_audioset = nn.Linear(1024, num_classes, bias=True)
+		self.fc_audioset = nn.Linear(1024, n_classes, bias=True)
 
 		self.init_weights()
 
@@ -91,7 +91,7 @@ class MobileNetV1(nn.Module):
 		init_layer(self.fc1)
 		init_layer(self.fc_audioset)
 
-	def forward(self, x: Tensor, mixup_lambda=None):
+	def forward(self, x: Tensor):
 		"""
 		Input: (batch_size, data_length)"""
 
@@ -161,7 +161,7 @@ class InvertedResidual(nn.Module):
 
 
 class MobileNetV2(nn.Module):
-	def __init__(self, num_classes: int = 527, **kwargs):
+	def __init__(self, n_classes: int = 527, **kwargs):
 		super(MobileNetV2, self).__init__()
 
 		self.bn0 = nn.BatchNorm2d(64)
@@ -226,7 +226,7 @@ class MobileNetV2(nn.Module):
 		self.features = nn.Sequential(*self.features)
 
 		self.fc1 = nn.Linear(1280, 1024, bias=True)
-		self.fc_audioset = nn.Linear(1024, num_classes, bias=True)
+		self.fc_audioset = nn.Linear(1024, n_classes, bias=True)
 
 		self.init_weight()
 
@@ -235,7 +235,7 @@ class MobileNetV2(nn.Module):
 		init_layer(self.fc1)
 		init_layer(self.fc_audioset)
 
-	def forward(self, x, mixup_lambda=None):
+	def forward(self, x):
 		"""
 		Input: (batch_size, data_length)"""
 

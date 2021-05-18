@@ -1,0 +1,15 @@
+# @package _group_
+
+name: "MixMatch"
+acronym: "mm"
+
+activation: "softmax"
+criterion_s: "CrossEntropy"
+criterion_u: "CrossEntropy"
+reduction: "mean"
+augm_weak: "weak"
+lambda_u: 1.0
+n_augms: 2
+
+alpha: 0.75
+temperature: 0.5

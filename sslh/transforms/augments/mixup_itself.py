@@ -10,7 +10,7 @@ from sslh.transforms.augments.mixup import MixUpModule
 
 class MixUpBatchItSelf(Module):
 	"""
-		Apply MixUp transform with the same batch in a different order. See MixUp module for details.
+		Apply MixUp transform with the same batch in a different order. See MixUpModule for details.
 	"""
 	def __init__(self, alpha: float = 0.4, apply_max: bool = False, return_shuffled_batches: bool = False):
 		super().__init__()

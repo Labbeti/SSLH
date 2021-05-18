@@ -1,0 +1,13 @@
+# @package _group_
+
+name: "DeepCoTraining"
+acronym: "dct"
+
+activation: "softmax"
+log_activation: log_${expt.activation}
+criterion_s: "CrossEntropy"
+reduction: "mean"
+epsilon: 0.02
+lambda_cot: 1.0
+lambda_diff: 0.5
+duplicate_loader_s: true

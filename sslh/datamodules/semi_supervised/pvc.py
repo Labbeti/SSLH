@@ -8,10 +8,10 @@ from mlu.datasets.wrappers import TransformDataset, NoLabelDataset
 from sslh.datasets.pvc import ComParE2021PRS, IterationBalancedSampler, class_balance_split
 
 
-NUM_CLASSES = 5
+N_CLASSES = 5
 
 
-class PVCSemiDataModule(LightningDataModule):
+class PVCDataModuleSSL(LightningDataModule):
 	def __init__(
 		self,
 		dataset_root: str,
@@ -21,14 +21,14 @@ class PVCSemiDataModule(LightningDataModule):
 		target_transform: Optional[Callable] = None,
 		bsize_train_s: int = 64,
 		bsize_train_u: int = 64,
-		num_workers_s: int = 2,
-		num_workers_u: int = 3,
+		n_workers_s: int = 2,
+		n_workers_u: int = 3,
 		drop_last: bool = True,
 		pin_memory: bool = False,
 		ratio_s: float = 0.1,
 		ratio_u: float = 0.9,
 		duplicate_loader_s: bool = False,
-		nb_train_steps_u: Optional[int] = 50000,
+		n_train_steps_u: Optional[int] = 50000,
 	):
 		"""
 			LightningDataModule of Primate Vocalization Corpus (PVC) for semi-supervised trainings.
@@ -42,14 +42,14 @@ class PVCSemiDataModule(LightningDataModule):
 			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
 			:param bsize_train_s: The batch size used for supervised train data. (default: 64)
 			:param bsize_train_u: The batch size used for unsupervised train data. (default: 64)
-			:param num_workers_s: The number of workers for supervised train dataloader. (default: 2)
-			:param num_workers_s: The number of workers for unsupervised train dataloader. (default: 3)
+			:param n_workers_s: The number of workers for supervised train dataloader. (default: 2)
+			:param n_workers_s: The number of workers for unsupervised train dataloader. (default: 3)
 			:param drop_last: If True, drop the last incomplete batch. (default: False)
 			:param pin_memory: If True, pin the memory of dataloader. (default: False)
 			:param ratio_s: The ratio of the supervised subset len in [0, 1]. (default: 0.1)
 			:param ratio_u: The ratio of the unsupervised subset len in [0, 1]. (default: 0.9)
 			:param duplicate_loader_s: If True, duplicate the supervised dataloader for DCT training. (default: False)
-			:param nb_train_steps_u: The number of train steps for PVC.
+			:param n_train_steps_u: The number of train steps for PVC.
 				If None, the number will be set to the number of train labeled data.
 				(default: 50000)
 		"""
@@ -64,15 +64,15 @@ class PVCSemiDataModule(LightningDataModule):
 		self.bsize_train_u = bsize_train_u
 		self.bsize_val = bsize_train_s + bsize_train_u
 		self.bsize_test = bsize_train_s + bsize_train_u
-		self.num_workers_s = num_workers_s
-		self.num_workers_u = num_workers_u
+		self.n_workers_s = n_workers_s
+		self.n_workers_u = n_workers_u
 		self.drop_last = drop_last
 		self.pin_memory = pin_memory
 		self.ratio_s = ratio_s
 		self.ratio_u = ratio_u
 		self.duplicate_loader_s = duplicate_loader_s
 
-		self.nb_train_steps_u = nb_train_steps_u
+		self.n_train_steps_u = n_train_steps_u
 
 		self.train_dataset_raw = None
 		self.val_dataset_raw = None
@@ -80,27 +80,36 @@ class PVCSemiDataModule(LightningDataModule):
 
 		self.sampler_s = None
 		self.sampler_u = None
+		self.example_input_array = None
 
 	def prepare_data(self, *args, **kwargs):
 		pass
 
 	def setup(self, stage: Optional[str] = None):
-		self.train_dataset_raw = ComParE2021PRS(self.dataset_root, "train", transform=None)
-		self.val_dataset_raw = ComParE2021PRS(self.dataset_root, "devel", transform=None)
-		# The "test" subset is unlabeled, so we do not use it for now
-		self.test_dataset_raw = None
+		if stage == 'fit':
+			self.train_dataset_raw = ComParE2021PRS(self.dataset_root, 'train', transform=None)
+			self.val_dataset_raw = ComParE2021PRS(self.dataset_root, 'devel', transform=None)
 
-		indexes_s, indexes_u = class_balance_split(self.train_dataset_raw, self.ratio_s, self.ratio_u)
+			indexes_s, indexes_u = class_balance_split(self.train_dataset_raw, self.ratio_s, self.ratio_u)
 
-		if self.nb_train_steps_u is None:
-			nb_train_samples_s = len(indexes_s) * self.bsize_train_s
-			nb_train_samples_u = len(indexes_u) * self.bsize_train_u
-		else:
-			nb_train_samples_s = self.nb_train_steps_u * self.bsize_train_s
-			nb_train_samples_u = self.nb_train_steps_u * self.bsize_train_u
+			if self.n_train_steps_u is None:
+				n_train_samples_s = len(indexes_s) * self.bsize_train_s
+				n_train_samples_u = len(indexes_u) * self.bsize_train_u
+			else:
+				n_train_samples_s = self.n_train_steps_u * self.bsize_train_s
+				n_train_samples_u = self.n_train_steps_u * self.bsize_train_u
 
-		self.sampler_s = IterationBalancedSampler(self.train_dataset_raw, indexes_s, nb_train_samples_s)
-		self.sampler_u = SubsetCycleSampler(indexes_u, nb_train_samples_u)
+			self.sampler_s = IterationBalancedSampler(self.train_dataset_raw, indexes_s, n_train_samples_s)
+			self.sampler_u = SubsetCycleSampler(indexes_u, n_train_samples_u)
+
+			dataloader = self.val_dataloader()
+			xs, ys = next(iter(dataloader))
+			self.example_input_array = xs
+			self.dims = tuple(xs.shape)
+
+		elif stage == 'test':
+			# The 'test' subset is unlabeled, so we do not use it for now
+			self.test_dataset_raw = None
 
 	def train_dataloader(self) -> Tuple[DataLoader, ...]:
 		train_dataset_s = TransformDataset(self.train_dataset_raw, self.transform_train_s, index=0)
@@ -112,7 +121,7 @@ class PVCSemiDataModule(LightningDataModule):
 		loader_s = DataLoader(
 			dataset=train_dataset_s,
 			batch_size=self.bsize_train_s,
-			num_workers=self.num_workers_s,
+			num_workers=self.n_workers_s,
 			sampler=self.sampler_s,
 			drop_last=self.drop_last,
 			pin_memory=self.pin_memory,
@@ -120,7 +129,7 @@ class PVCSemiDataModule(LightningDataModule):
 		loader_u = DataLoader(
 			dataset=train_dataset_u,
 			batch_size=self.bsize_train_u,
-			num_workers=self.num_workers_u,
+			num_workers=self.n_workers_u,
 			sampler=self.sampler_u,
 			drop_last=self.drop_last,
 			pin_memory=self.pin_memory,
@@ -144,7 +153,7 @@ class PVCSemiDataModule(LightningDataModule):
 		loader = DataLoader(
 			dataset=val_dataset,
 			batch_size=self.bsize_val,
-			num_workers=self.num_workers_s + self.num_workers_u,
+			num_workers=self.n_workers_s + self.n_workers_u,
 			drop_last=False,
 		)
 		return loader
@@ -160,7 +169,7 @@ class PVCSemiDataModule(LightningDataModule):
 		loader = DataLoader(
 			dataset=test_dataset,
 			batch_size=self.bsize_test,
-			num_workers=self.num_workers_s + self.num_workers_u,
+			num_workers=self.n_workers_s + self.n_workers_u,
 			drop_last=False,
 		)
 		return loader

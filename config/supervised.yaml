@@ -1,30 +1,14 @@
 # @package _global_
+
 defaults:
+  - common
+  - hydra/job_logging: custom  # redirect log file to output_subdir
   - dataset: esc10
-  - model: wrn28
-  - experiment: supervised
+  - model: wideresnet28
   - optim: adam
   - path: default
-  - sched: cosine
+  - sched: softcosine
+  - expt: supervised
 
-verbose: false
-datetime: "${now:%Y-%m-%d_%H:%M:%S}"
-seed: 1234
-tag: ""
-epochs: 10
-max_it: null
-cpus: 12
-gpus: 1
-logdir: ${path.logdir}
-resume_path: null
 bsize: 60
 ratio: 1.0
-
-hydra:
-  # Disable log file
-  job_logging: null
-  # Set args save in board dir
-  output_subdir: ${logdir}/${dataset.name}/${experiment.fullname}/${datetime}${tag}/.hydra
-  # Set hydra working dir
-  run:
-    dir: ./

@@ -25,8 +25,8 @@ class ESC10Base(ESC50Base):
 	) -> None:
 		super().__init__(root, folds, download, transform)
 
-		self.url = URL["esc10-10"]
-		self.nb_class = 10
+		self.url = URL['esc10-10']
+		self.n_class = 10
 		self.mapper = None  # Map the ESC-50 target to range(0, 10)
 
 	def _load_metadata(self) -> None:

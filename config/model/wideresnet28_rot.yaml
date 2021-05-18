@@ -1,0 +1,9 @@
+# @package _group_
+
+name: "WideResNet28Rot"
+acronym: "WRN28Rot"
+
+n_classes: ${dataset.n_classes}
+n_input_channels: 1
+width: 2
+rot_size: 4

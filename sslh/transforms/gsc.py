@@ -1,55 +1,42 @@
 
+import torch
+
 from torch.nn import Sequential
 from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 from typing import Callable, Optional
 
 from mlu.nn import OneHot
-from mlu.transforms import PadAlignLeft
-from sslh.transforms.pools.audio import get_weak_augm_pool, get_strong_augm_pool
+from mlu.transforms import Pad
+from sslh.transforms.pools.audio import get_pool
 from sslh.transforms.self_transforms.audio import get_self_transform_flips
 from sslh.transforms.utils import compose_augment
 
+N_CLASSES = 35
 
-def get_transform_gsc(transform_name: str) -> Callable:
-	if transform_name == "weak":
-		pool = get_weak_augm_pool()
-	elif transform_name == "strong":
-		pool = get_strong_augm_pool()
-	elif transform_name == "identity":
-		pool = []
-	else:
-		raise RuntimeError(f"Unknown transform name '{transform_name}'.")
 
-	augment = compose_augment(pool, get_transform_to_spec_gsc(), get_pre_transform_gsc(), get_post_transform_gsc())
+def get_transform_gsc(augment_name: str, n_mels: int = 64, hop_length: int = 512, n_fft: int = 2048) -> Callable:
+	pool = get_pool(augment_name)
+
+	# Spectrogram shape : (channels, freq, time) = (1, 64, 32)
+	waveform_length = 1  # seconds
+	sample_rate = 16000
+	target_length = sample_rate * waveform_length
+
+	transform_to_spec = Sequential(
+		Pad(target_length),
+		MelSpectrogram(sample_rate=sample_rate, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels),
+		AmplitudeToDB(),
+	)
+	pre_transform = None
+	post_transform = None
+
+	augment = compose_augment(pool, transform_to_spec, pre_transform, post_transform)
 	return augment
 
 
-def get_pre_transform_gsc() -> Optional[Callable]:
-	return None
-
-
-def get_post_transform_gsc() -> Optional[Callable]:
-	return None
-
-
-def get_transform_to_spec_gsc() -> Optional[Callable]:
-	waveform_length = 1  # second
-	sr = 16000
-	n_fft = 2048  # window size
-	hop_length = 512
-	n_mels = 64
-
-	return Sequential(
-		PadAlignLeft(target_length=sr * waveform_length, fill_value=0.0),
-		# Spec shape : (..., freq, time)
-		MelSpectrogram(sample_rate=sr, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels),
-		AmplitudeToDB(),
-	)
-
-
 def get_target_transform_gsc(smooth: Optional[float] = None) -> Optional[Callable]:
-	return OneHot(35, smooth)
+	return OneHot(N_CLASSES, smooth, dtype=torch.float)
 
 
-def get_self_transform_gsc() -> Callable:
+def get_self_transform_gsc(**kwargs) -> Callable:
 	return get_self_transform_flips()

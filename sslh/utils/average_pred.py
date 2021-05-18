@@ -18,7 +18,7 @@ class AveragePred:
 
 	def add_pred(self, pred: Tensor):
 		"""
-			Add a batch of predictions of shape (bsize, num_classes) to the history for computing the classes distributions.
+			Add a batch of predictions of shape (bsize, n_classes) to the history for computing the classes distributions.
 		"""
 		if len(self.preds) >= self.history:
 			self.preds[self.cur_idx] = pred

@@ -1,8 +1,9 @@
 # @package _group_
 
-name: "GSC"
-fullname: "GoogleSpeechCommands"
-num_classes: 35
+name: "GoogleSpeechCommands"
+acronym: "GSC"
+
+n_classes: 35
 root: ${path.gsc}
 monitor: "val/acc"
 monitor_mode: "max"
@@ -11,3 +12,8 @@ log_on_epoch: true
 sample_rate: 16000
 
 download: true
+
+transform:
+  n_mels: 64
+  hop_length: 512
+  n_fft: 2048

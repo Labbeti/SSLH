@@ -9,6 +9,7 @@ if [ "$path" = "NOT_FOUND" ]; then
   script_params="$script_params path=$path"
 fi
 
+tag=`./get_param.sh "tag" "" $@`
 cpus=`./get_param.sh "cpus" "10" $@`
 gpus=`./get_param.sh "gpus" "1" $@`
 tag=`./get_param.sh "tag" "" $@`
@@ -26,8 +27,8 @@ fpath_script="${dpath_standalone}/${fname_script}"
 
 job_name="`basename ${fname_script} .py`"
 dpath_log="${dpath_project}/logs/${dataset}"
-fpath_out="${dpath_log}/${dataset}_${job_name}_${tag}_%j.out"
-fpath_err="${dpath_log}/${dataset}_${job_name}_${tag}_%j.err"
+fpath_out="${dpath_log}/${dataset}_%j_${job_name}_${tag}.out"
+fpath_err="${dpath_log}/${dataset}_%j_${job_name}_${tag}.err"
 fpath_singularity=""
 srun="srun"
 
@@ -98,7 +99,7 @@ ${srun} ${fpath_python} ${fpath_script} ${script_params}
 EOT
 
 # Run & exit --------------------------------------------------------------------------------------------------------------
-echo "Sbatch job '${job_name}' for script '${fname_script}'"
+echo "Sbatch job '${job_name}' for script '${fname_script}' with tag '${tag}'"
 sbatch ${fpath_sbatch}
 
 exit 0
