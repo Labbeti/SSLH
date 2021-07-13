@@ -42,9 +42,9 @@ def main(cfg: DictConfig):
 	torch.autograd.set_detect_anomaly(cfg.debug)
 
 	# Build transforms
-	transform_train = get_transform(cfg.dataset.acronym, cfg.expt.augm_train, **cfg.dataset.transform)
-	transform_val = get_transform(cfg.dataset.acronym, 'identity', **cfg.dataset.transform)
-	target_transform = get_target_transform(cfg.dataset.acronym)
+	transform_train = get_transform(cfg.data.acronym, cfg.expt.augm_train, **cfg.data.transform)
+	transform_val = get_transform(cfg.data.acronym, 'identity', **cfg.data.transform)
+	target_transform = get_target_transform(cfg.data.acronym)
 
 	# Build datamodule
 	datamodule = get_datamodule_sup_from_cfg(cfg, transform_train, transform_val, target_transform)
@@ -56,7 +56,7 @@ def main(cfg: DictConfig):
 	criterion = get_criterion_from_name(cfg.expt.criterion, cfg.expt.reduction)
 
 	# Build metrics
-	train_metrics, val_metrics, val_metrics_stack = get_metrics(cfg.dataset.acronym)
+	train_metrics, val_metrics, val_metrics_stack = get_metrics(cfg.data.acronym)
 
 	# Build Lightning module
 	module_params = dict(
@@ -66,7 +66,7 @@ def main(cfg: DictConfig):
 		criterion=criterion,
 		train_metrics=train_metrics,
 		val_metrics=val_metrics,
-		log_on_epoch=cfg.dataset.log_on_epoch,
+		log_on_epoch=cfg.data.log_on_epoch,
 		alpha=cfg.expt.alpha,
 	)
 
@@ -137,7 +137,7 @@ def main(cfg: DictConfig):
 
 	for module, dataloader in zip(val_or_test_modules, val_or_test_dataloaders):
 		if len(module.metric_dict) > 0 and dataloader is not None:
-			trainer.test_dataloaders = None
+			trainer.test_dataloaders = []
 			trainer.test(module, dataloader)
 
 	logger.save_and_close()

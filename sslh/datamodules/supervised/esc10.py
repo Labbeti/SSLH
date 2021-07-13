@@ -17,7 +17,7 @@ FOLDS = [1, 2, 3, 4, 5]
 class ESC10DataModuleSup(LightningDataModule):
 	def __init__(
 		self,
-		dataset_root: str,
+		root: str,
 		transform_train: Optional[Callable] = None,
 		transform_val: Optional[Callable] = None,
 		target_transform: Optional[Callable] = None,
@@ -35,7 +35,7 @@ class ESC10DataModuleSup(LightningDataModule):
 
 			Note: The subset of the dataset has the same class distribution.
 
-			:param dataset_root: The root path of the dataset.
+			:param root: The root path of the dataset.
 			:param transform_train: The optional transform to apply to train data. (default: None)
 			:param transform_val: The optional transform to apply to validation data. (default: None)
 			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
@@ -57,7 +57,7 @@ class ESC10DataModuleSup(LightningDataModule):
 				(default: None)
 		"""
 		super().__init__()
-		self.dataset_root = dataset_root
+		self.root = root
 		self.transform_train = transform_train
 		self.transform_val = transform_val
 		self.transform_test = transform_val
@@ -82,12 +82,12 @@ class ESC10DataModuleSup(LightningDataModule):
 
 	def prepare_data(self, *args, **kwargs):
 		if self.download_dataset:
-			_ = ESC10(self.dataset_root, folds=tuple(FOLDS), download=True)
+			_ = ESC10(self.root, folds=tuple(FOLDS), download=True)
 
 	def setup(self, stage: Optional[str] = None):
 		if stage == 'fit':
-			self.train_dataset_raw = ESC10(root=self.dataset_root, folds=tuple(self.folds_train), download=False)
-			self.val_dataset_raw = ESC10(root=self.dataset_root, folds=tuple(self.folds_val), download=False)
+			self.train_dataset_raw = ESC10(root=self.root, folds=tuple(self.folds_train), download=False)
+			self.val_dataset_raw = ESC10(root=self.root, folds=tuple(self.folds_val), download=False)
 
 			if self.ratio >= 1.0:
 				indexes = list(range(len(self.train_dataset_raw)))

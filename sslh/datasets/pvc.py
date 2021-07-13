@@ -175,7 +175,7 @@ class InfiniteSampler(Sampler):
 
 
 def mean_teacher(
-		dataset_root,
+		root,
 		supervised_ratio: float = 0.1,
 		batch_size: int = 128,
 
@@ -193,7 +193,7 @@ def mean_teacher(
 	}
 
 	# Training subset
-	train_dataset = ComParE2021PRS(root=dataset_root, subset='train', transform=train_transform)
+	train_dataset = ComParE2021PRS(root=root, subset='train', transform=train_transform)
 	print(train_dataset.__getitem__)
 	s_idx, u_idx = class_balance_split(train_dataset, supervised_ratio)
 
@@ -214,7 +214,7 @@ def mean_teacher(
 	train_loader = train_s_loader
 
 	# validation subset
-	val_dataset = ComParE2021PRS(root=dataset_root, subset='devel', transform=val_transform)
+	val_dataset = ComParE2021PRS(root=root, subset='devel', transform=val_transform)
 	val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, **loader_args)
 
 	return train_loader, val_loader

@@ -17,7 +17,7 @@ DNAME_SPECS = 'mel_64x500'
 class ADSDataModuleSup(LightningDataModule):
 	def __init__(
 		self,
-		dataset_root: str,
+		root: str,
 		transform_train: Optional[Callable] = None,
 		transform_val: Optional[Callable] = None,
 		target_transform: Optional[Callable] = None,
@@ -36,7 +36,7 @@ class ADSDataModuleSup(LightningDataModule):
 
 			Note: The subset of the dataset has approximately the same class distribution.
 
-			:param dataset_root: The root path of the dataset.
+			:param root: The root path of the dataset.
 			:param transform_train: The optional transform to apply to train data. (default: None)
 			:param transform_val: The optional transform to apply to validation data. (default: None)
 			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
@@ -56,7 +56,7 @@ class ADSDataModuleSup(LightningDataModule):
 			raise ValueError(f'Train subsets available are {("balanced", "unbalanced")}.')
 
 		super().__init__()
-		self.dataset_root = dataset_root
+		self.root = root
 		self.transform_train = transform_train
 		self.transform_val = transform_val
 		self.transform_test = transform_val
@@ -84,8 +84,8 @@ class ADSDataModuleSup(LightningDataModule):
 		if pre_computed_specs:
 			self.data_shape = (64, 500)
 			self.data_key = 'data'
-			if osp.basename(self.dataset_root) != DNAME_SPECS:
-				self.dataset_root = osp.join(self.dataset_root, DNAME_SPECS)
+			if osp.basename(self.root) != DNAME_SPECS:
+				self.root = osp.join(self.root, DNAME_SPECS)
 		else:
 			self.data_shape = (320000,)
 			self.data_key = 'waveform'
@@ -96,7 +96,7 @@ class ADSDataModuleSup(LightningDataModule):
 	def setup(self, stage: Optional[str] = None):
 		if stage == 'fit':
 			dataset_params = dict(
-				root=self.dataset_root,
+				root=self.root,
 				transform=None,
 				rdcc_nbytes=self.rdcc_nbytes,
 				data_shape=self.data_shape,

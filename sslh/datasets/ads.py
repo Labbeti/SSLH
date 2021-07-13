@@ -673,7 +673,7 @@ class BatchSamplerFromList(Sampler):
 # Supervised Dataloaders build example :
 # def get_supervised(version: str = 'unbalanced', **kwargs):
 # 	def supervised(
-# 			dataset_root: str,
+# 			root: str,
 # 			rdcc_nbytes: int = 512 * 1024 ** 2,
 # 			data_shape: tuple = (64, 500,),
 # 			data_key: str = 'data',
@@ -694,7 +694,7 @@ class BatchSamplerFromList(Sampler):
 #
 # 		# Dataset parameters
 # 		d_params = dict(
-# 			root=os.path.join(dataset_root, 'AudioSet/hdfs/mel_64x500'),
+# 			root=os.path.join(root, 'AudioSet/hdfs/mel_64x500'),
 # 			rdcc_nbytes=rdcc_nbytes,
 # 			data_shape=data_shape,
 # 			data_key=data_key,

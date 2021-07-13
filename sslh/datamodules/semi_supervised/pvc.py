@@ -14,7 +14,7 @@ N_CLASSES = 5
 class PVCDataModuleSSL(LightningDataModule):
 	def __init__(
 		self,
-		dataset_root: str,
+		root: str,
 		transform_train_s: Optional[Callable] = None,
 		transform_train_u: Optional[Callable] = None,
 		transform_val: Optional[Callable] = None,
@@ -35,7 +35,7 @@ class PVCDataModuleSSL(LightningDataModule):
 
 			Note: The splits of the dataset has the same class distribution.
 
-			:param dataset_root: The root path of the dataset.
+			:param root: The root path of the dataset.
 			:param transform_train_s: The optional transform to apply to supervised train data. (default: None)
 			:param transform_train_u: The optional transform to apply to unsupervised train data. (default: None)
 			:param transform_val: The optional transform to apply to validation data. (default: None)
@@ -54,7 +54,7 @@ class PVCDataModuleSSL(LightningDataModule):
 				(default: 50000)
 		"""
 		super().__init__()
-		self.dataset_root = dataset_root
+		self.root = root
 		self.transform_train_s = transform_train_s
 		self.transform_train_u = transform_train_u
 		self.transform_val = transform_val
@@ -87,8 +87,8 @@ class PVCDataModuleSSL(LightningDataModule):
 
 	def setup(self, stage: Optional[str] = None):
 		if stage == 'fit':
-			self.train_dataset_raw = ComParE2021PRS(self.dataset_root, 'train', transform=None)
-			self.val_dataset_raw = ComParE2021PRS(self.dataset_root, 'devel', transform=None)
+			self.train_dataset_raw = ComParE2021PRS(self.root, 'train', transform=None)
+			self.val_dataset_raw = ComParE2021PRS(self.root, 'devel', transform=None)
 
 			indexes_s, indexes_u = class_balance_split(self.train_dataset_raw, self.ratio_s, self.ratio_u)
 

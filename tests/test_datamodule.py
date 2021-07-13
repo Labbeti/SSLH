@@ -8,7 +8,7 @@ from sslh.transforms import get_transform
 
 @hydra.main(config_path='../config', config_name='supervised')
 def main(cfg: DictConfig):
-	train_transform = get_transform(cfg.dataset.acronym, 'identity', **cfg.dataset.transform)
+	train_transform = get_transform(cfg.data.acronym, 'identity', **cfg.data.transform)
 	datamodule = get_fully_datamodule_from_cfg(cfg, train_transform, None, None)
 	datamodule.prepare_data()
 	datamodule.setup()

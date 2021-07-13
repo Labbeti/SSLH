@@ -15,7 +15,7 @@ N_CLASSES = 10
 class CIFAR10DataModuleSSL(LightningDataModule):
 	def __init__(
 		self,
-		dataset_root: str,
+		root: str,
 		transform_train_s: Optional[Callable] = None,
 		transform_train_u: Optional[Callable] = None,
 		transform_val: Optional[Callable] = None,
@@ -36,7 +36,7 @@ class CIFAR10DataModuleSSL(LightningDataModule):
 
 			Note: The splits of the dataset has the same class distribution.
 
-			:param dataset_root: The root path of the dataset.
+			:param root: The root path of the dataset.
 			:param transform_train_s: The optional transform to apply to supervised train data. (default: None)
 			:param transform_train_u: The optional transform to apply to unsupervised train data. (default: None)
 			:param transform_val: The optional transform to apply to validation data. (default: None)
@@ -53,7 +53,7 @@ class CIFAR10DataModuleSSL(LightningDataModule):
 			:param download_dataset: If True, automatically download the dataset in the root directory. (default: True)
 		"""
 		super().__init__()
-		self.dataset_root = dataset_root
+		self.root = root
 		self.transform_train_s = transform_train_s
 		self.transform_train_u = transform_train_u
 		self.transform_val = transform_val
@@ -83,13 +83,13 @@ class CIFAR10DataModuleSSL(LightningDataModule):
 
 	def prepare_data(self, *args, **kwargs):
 		if self.download_dataset:
-			_ = CIFAR10(self.dataset_root, train=True, download=True)
-			_ = CIFAR10(self.dataset_root, train=False, download=True)
+			_ = CIFAR10(self.root, train=True, download=True)
+			_ = CIFAR10(self.root, train=False, download=True)
 
 	def setup(self, stage: Optional[str] = None):
 		if stage == 'fit':
-			self.train_dataset_raw = CIFAR10(self.dataset_root, train=True, download=False)
-			self.val_dataset_raw = CIFAR10(self.dataset_root, train=False, download=False)
+			self.train_dataset_raw = CIFAR10(self.root, train=True, download=False)
+			self.val_dataset_raw = CIFAR10(self.root, train=False, download=False)
 
 			# Setup split
 			ratios = [self.ratio_s, self.ratio_u]

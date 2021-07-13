@@ -1,0 +1,22 @@
+# @package _group_
+
+name: "ESC10"
+acronym: "ESC10"
+
+n_classes: 10
+root: ${path.esc10}
+monitor: "val/acc"
+monitor_mode: "max"
+val_check_interval: 1.0
+log_on_epoch: true
+sample_rate: 44100
+
+download: true
+# If null, the program detect automatically the remaining folds
+folds_train: null
+folds_val: [ 5 ]
+
+transform:
+  n_mels: 64
+  hop_length: 512
+  n_fft: 2048

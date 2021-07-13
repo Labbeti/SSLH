@@ -13,7 +13,7 @@ N_CLASSES = 5
 class PVCDataModuleSup(LightningDataModule):
 	def __init__(
 		self,
-		dataset_root: str,
+		root: str,
 		transform_train: Optional[Callable] = None,
 		transform_val: Optional[Callable] = None,
 		target_transform: Optional[Callable] = None,
@@ -29,7 +29,7 @@ class PVCDataModuleSup(LightningDataModule):
 
 			Note: The subset of the dataset has the same class distribution.
 
-			:param dataset_root: The root path of the dataset.
+			:param root: The root path of the dataset.
 			:param transform_train: The optional transform to apply to train data. (default: None)
 			:param transform_val: The optional transform to apply to validation data. (default: None)
 			:param target_transform: The optional transform to apply to train and validation targets. (default: None)
@@ -43,7 +43,7 @@ class PVCDataModuleSup(LightningDataModule):
 				(default: 50000)
 		"""
 		super().__init__()
-		self.dataset_root = dataset_root
+		self.root = root
 		self.transform_train = transform_train
 		self.transform_val = transform_val
 		self.transform_test = transform_val
@@ -70,8 +70,8 @@ class PVCDataModuleSup(LightningDataModule):
 
 	def setup(self, stage: Optional[str] = None):
 		if stage == 'fit':
-			self.train_dataset_raw = ComParE2021PRS(self.dataset_root, 'train', transform=None)
-			self.val_dataset_raw = ComParE2021PRS(self.dataset_root, 'devel', transform=None)
+			self.train_dataset_raw = ComParE2021PRS(self.root, 'train', transform=None)
+			self.val_dataset_raw = ComParE2021PRS(self.root, 'devel', transform=None)
 
 			if self.ratio >= 1.0:
 				indexes_s = list(range(len(self.train_dataset_raw)))

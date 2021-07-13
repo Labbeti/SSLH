@@ -45,13 +45,13 @@ def main(cfg: DictConfig):
 	torch.autograd.set_detect_anomaly(cfg.debug)
 
 	# Build transforms
-	transform_weak = get_transform(cfg.dataset.acronym, cfg.expt.augm_weak, **cfg.dataset.transform)
-	transform_strong = get_transform(cfg.dataset.acronym, cfg.expt.augm_strong, **cfg.dataset.transform)
+	transform_weak = get_transform(cfg.data.acronym, cfg.expt.augm_weak, **cfg.data.transform)
+	transform_strong = get_transform(cfg.data.acronym, cfg.expt.augm_strong, **cfg.data.transform)
 
 	transform_train_s = transform_weak
 	transform_train_u = ReMixMatchUnlabeledPreProcess(transform_weak, transform_strong, cfg.expt.n_augms)
-	transform_val = get_transform(cfg.dataset.acronym, 'identity', **cfg.dataset.transform)
-	target_transform = get_target_transform(cfg.dataset.acronym)
+	transform_val = get_transform(cfg.data.acronym, 'identity', **cfg.data.transform)
+	target_transform = get_target_transform(cfg.data.acronym)
 
 	# Build datamodule
 	datamodule = get_datamodule_ssl_from_cfg(cfg, transform_train_s, transform_train_u, transform_val, target_transform)
@@ -66,7 +66,7 @@ def main(cfg: DictConfig):
 	criterion_u1 = get_criterion_from_name(cfg.expt.criterion_u1, cfg.expt.reduction)
 
 	# Build metrics
-	train_metrics, val_metrics, val_metrics_stack = get_metrics(cfg.dataset.acronym)
+	train_metrics, val_metrics, val_metrics_stack = get_metrics(cfg.data.acronym)
 
 	# Build Lightning module
 	module_params = dict(
@@ -83,11 +83,11 @@ def main(cfg: DictConfig):
 		history=cfg.expt.history,
 		train_metrics=train_metrics,
 		val_metrics=val_metrics,
-		log_on_epoch=cfg.dataset.log_on_epoch,
+		log_on_epoch=cfg.data.log_on_epoch,
 	)
 
 	# Transform, activation, criterion and metrics for rotation loss (self-supervised component)
-	self_transform = get_self_transform(cfg.dataset.acronym)
+	self_transform = get_self_transform(cfg.data.acronym)
 	activation_r = get_activation_from_name(cfg.expt.activation_r)
 	criterion_r = get_criterion_from_name(cfg.expt.criterion_r, cfg.expt.reduction)
 	train_metrics_r = dict(acc=CategoricalAccuracy())
@@ -180,7 +180,7 @@ def main(cfg: DictConfig):
 
 	for module, dataloader in zip(val_or_test_modules, val_or_test_dataloaders):
 		if len(module.metric_dict) > 0 and dataloader is not None:
-			trainer.test_dataloaders = None
+			trainer.test_dataloaders = []
 			trainer.test(module, dataloader)
 
 	logger.save_and_close()

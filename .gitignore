@@ -5,7 +5,7 @@
 .vscode/
 __pycache__/
 build/
-data/
+/data/
 dist/
 old/
 results/
@@ -15,6 +15,7 @@ outputs/
 .hydra/
 boards/
 logs/
+img/
 
 # Folders mask
 *.egg-info/

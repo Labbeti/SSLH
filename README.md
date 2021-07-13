@@ -2,29 +2,29 @@
 
 Unofficial PyTorch and PyTorch-Lightning implementations of Deep Semi-Supervised Learning methods for audio tagging.
 
-There is 4 SSL method :
+There is 4 SSL methods :
 - [FixMatch (FM)](https://arxiv.org/pdf/2001.07685.pdf)
 - [MixMatch (MM)](https://arxiv.org/pdf/1905.02249.pdf)
 - [ReMixMatch (RMM)](https://arxiv.org/pdf/1911.09785.pdf)
 - [Unsupervised Data Augmentation (UDA)](https://arxiv.org/pdf/1904.12848.pdf)
 
 For the following datasets :
-
-[comment]: <> (- [AudioSet &#40;ADS&#41;]&#40;https://static.googleusercontent.com/media/research.google.com/fr//pubs/archive/45857.pdf&#41;)
 - [CIFAR-10 (CIFAR10)](https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf)
 - [ESC-10 (ESC10)](https://www.karolpiczak.com/papers/Piczak2015-ESC-Dataset.pdf)
-
-[comment]: <> (- [FSD50K]&#40;&#41;)
 - [Google Speech Commands (GSC)](https://arxiv.org/pdf/1804.03209.pdf)
 - [Primate Vocalization Corpus (PVC)](https://arxiv.org/pdf/2101.10390.pdf)
 - [UrbanSound8k (UBS8K)](http://www.justinsalamon.com/uploads/4/3/9/4/4394963/salamon_urbansound_acmmm14.pdf)
+
+[comment]: <> (- [AudioSet &#40;ADS&#41;]&#40;https://static.googleusercontent.com/media/research.google.com/fr//pubs/archive/45857.pdf&#41;)
+[comment]: <> (- [FSD50K]&#40;&#41;)
 
 With 3 models :
 - [WideResNet28 (WRN28)](https://arxiv.org/pdf/1605.07146.pdf)
 - [MobileNetV1 (MNV1)](https://arxiv.org/pdf/1704.04861.pdf)
 - [MobileNetV2 (MNV2)](https://arxiv.org/pdf/1801.04381.pdf)
 
-The implementation of Mean Teacher (MT), Deep Co-Training (DCT) and Pseudo-Labeling (PL) are still in development.
+The implementation of Mean Teacher (MT), Deep Co-Training (DCT) and Pseudo-Labeling (PL) are present in this repository but not fully tested.
+
 
 ## Installation
 #### Download & setup
@@ -44,7 +44,7 @@ The installation is now finished.
 The project contains also a ```environment.yaml``` and ```requirements.txt``` for installing the packages respectively with conda or pip :
 - With **conda** environment file :
 ```bash
-conda create -n env_sslh -f environment.yaml
+conda env create -n env_sslh -f environment.yaml
 conda activate env_sslh
 pip install -e . --no-dependencies
 ```
@@ -72,12 +72,13 @@ standalone
 ├── mean_teacher.py
 ├── mixmatch.py
 ├── mixup.py
+├── pseudo_labeling.py
 ├── remixmatch.py
 ├── supervised.py
 └── uda.py
 ```
 
-The code use Hydra for parsing args. The syntax of an argument is "name=value" instead of "--name value".
+The code use Hydra for parsing args. The syntax of setting an argument is "name=value" instead of "--name value".
 
 Example 1 : MixMatch on ESC10
 ```bash
@@ -104,12 +105,13 @@ sslh
 │     ├── partial_supervised
 │     └── semi_supervised
 ├── datasets
-├── experiments
+├── expt
 │     ├── deep_co_training
 │     ├── fixmatch
 │     ├── mean_teacher
 │     ├── mixmatch
 │     ├── mixup
+│     ├── pseudo_labeling
 │     ├── remixmatch
 │     ├── supervised
 │     └── uda
@@ -127,9 +129,9 @@ This repository has been created by Etienne Labbé (Labbeti on Github).
 
 It contains also some code from the following authors :
 - Léo Cancès (leocances on github)
-  - For AudioSet, ESC10, GSC and UBS8K datasets and samplers.
+  - For AudioSet, ESC10, GSC, PVC and UBS8K datasets.
 - Qiuqiang Kong (qiuqiangkong on Github)
-  - For MobileNetV1 & V2 model implementation from [PANN](https://github.com/qiuqiangkong/audioset_tagging_cnn)
+  - For MobileNetV1 & V2 model implementation from [PANN](https://github.com/qiuqiangkong/audioset_tagging_cnn).
 
 ## Additional notes
 - This project has been made with Ubuntu 20.04 and Python 3.8.5.

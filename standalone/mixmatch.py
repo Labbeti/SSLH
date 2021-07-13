@@ -44,12 +44,12 @@ def main(cfg: DictConfig):
 	torch.autograd.set_detect_anomaly(cfg.debug)
 
 	# Build transforms
-	transform_weak = get_transform(cfg.dataset.acronym, cfg.expt.augm_weak, **cfg.dataset.transform)
+	transform_weak = get_transform(cfg.data.acronym, cfg.expt.augm_weak, **cfg.data.transform)
 
 	transform_train_s = transform_weak
 	transform_train_u = MixMatchUnlabeledPreProcess(transform_weak, cfg.expt.n_augms)
-	transform_val = get_transform(cfg.dataset.acronym, 'identity', **cfg.dataset.transform)
-	target_transform = get_target_transform(cfg.dataset.acronym)
+	transform_val = get_transform(cfg.data.acronym, 'identity', **cfg.data.transform)
+	target_transform = get_target_transform(cfg.data.acronym)
 
 	# Build datamodule
 	datamodule = get_datamodule_ssl_from_cfg(cfg, transform_train_s, transform_train_u, transform_val, target_transform)
@@ -62,7 +62,7 @@ def main(cfg: DictConfig):
 	criterion_u = get_criterion_from_name(cfg.expt.criterion_u, cfg.expt.reduction)
 
 	# Build metrics
-	train_metrics, val_metrics, val_metrics_stack = get_metrics(cfg.dataset.acronym)
+	train_metrics, val_metrics, val_metrics_stack = get_metrics(cfg.data.acronym)
 
 	# Build Lightning module
 	module_params = dict(
@@ -75,7 +75,7 @@ def main(cfg: DictConfig):
 		n_augms=cfg.expt.n_augms,
 		train_metrics=train_metrics,
 		val_metrics=val_metrics,
-		log_on_epoch=cfg.dataset.log_on_epoch,
+		log_on_epoch=cfg.data.log_on_epoch,
 	)
 
 	if cfg.expt.name == 'MixMatch':
@@ -171,7 +171,7 @@ def main(cfg: DictConfig):
 
 	for module, dataloader in zip(val_or_test_modules, val_or_test_dataloaders):
 		if len(module.metric_dict) > 0 and dataloader is not None:
-			trainer.test_dataloaders = None
+			trainer.test_dataloaders = []
 			trainer.test(module, dataloader)
 
 	logger.save_and_close()

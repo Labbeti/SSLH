@@ -19,7 +19,7 @@ FOLDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 class UBS8KDataModuleSSL(LightningDataModule):
 	def __init__(
 		self,
-		dataset_root: str,
+		root: str,
 		transform_train_s: Optional[Callable] = None,
 		transform_train_u: Optional[Callable] = None,
 		transform_val: Optional[Callable] = None,
@@ -42,7 +42,7 @@ class UBS8KDataModuleSSL(LightningDataModule):
 
 			Note: The splits of the dataset has the same class distribution.
 
-			:param dataset_root: The root path of the dataset.
+			:param root: The root path of the dataset.
 			:param transform_train_s: The optional transform to apply to supervised train data. (default: None)
 			:param transform_train_u: The optional transform to apply to unsupervised train data. (default: None)
 			:param transform_val: The optional transform to apply to validation data. (default: None)
@@ -67,11 +67,11 @@ class UBS8KDataModuleSSL(LightningDataModule):
 					[1, 2, 3, 4, 5, 6, 7, 8, 9] for folds_train and [10] for folds_val.
 				(default: None)
 		"""
-		if not osp.isdir(dataset_root):
-			raise RuntimeError(f'Unknown dataset root dirpath "{dataset_root}" for UBS8K.')
+		if not osp.isdir(root):
+			raise RuntimeError(f'Unknown dataset root dirpath "{root}" for UBS8K.')
 
 		super().__init__()
-		self.dataset_root = dataset_root
+		self.root = root
 		self.transform_train_s = transform_train_s
 		self.transform_train_u = transform_train_u
 		self.transform_val = transform_val
@@ -105,8 +105,8 @@ class UBS8KDataModuleSSL(LightningDataModule):
 
 	def setup(self, stage: Optional[str] = None):
 		if stage == 'fit':
-			self.train_dataset_raw = UBS8KDataset(self.dataset_root, folds=self.folds_train)
-			self.val_dataset_raw = UBS8KDataset(self.dataset_root, folds=self.folds_val)
+			self.train_dataset_raw = UBS8KDataset(self.root, folds=self.folds_train)
+			self.val_dataset_raw = UBS8KDataset(self.root, folds=self.folds_val)
 
 			# Setup split
 			ratios = [self.ratio_s, self.ratio_u]

@@ -33,7 +33,7 @@ def get_datamodule_ssl_from_cfg(
 	duplicate_loader_s = cfg.expt.duplicate_loader_s if hasattr(cfg.expt, 'duplicate_loader_s') else False
 
 	datamodule_params = dict(
-		dataset_root=cfg.dataset.root,
+		root=cfg.data.root,
 		ratio_s=cfg.ratio_s,
 		ratio_u=cfg.ratio_u,
 		transform_train_s=transform_train_s,
@@ -47,52 +47,52 @@ def get_datamodule_ssl_from_cfg(
 		duplicate_loader_s=duplicate_loader_s,
 	)
 
-	if cfg.dataset.acronym == 'ADS':
+	if cfg.data.acronym == 'ADS':
 		datamodule = ADSDataModuleSSL(
 			**datamodule_params,
-			train_subset=cfg.dataset.train_subset,
-			n_train_steps=cfg.dataset.n_train_steps,
-			sampler_s_balanced=cfg.dataset.sampler_s_balanced,
-			pre_computed_specs=cfg.dataset.pre_computed_specs,
+			train_subset=cfg.data.train_subset,
+			n_train_steps=cfg.data.n_train_steps,
+			sampler_s_balanced=cfg.data.sampler_s_balanced,
+			pre_computed_specs=cfg.data.pre_computed_specs,
 		)
-	elif cfg.dataset.acronym == 'CIFAR10':
+	elif cfg.data.acronym == 'CIFAR10':
 		datamodule = CIFAR10DataModuleSSL(
 			**datamodule_params,
-			download_dataset=cfg.dataset.download,
+			download_dataset=cfg.data.download,
 		)
-	elif cfg.dataset.acronym == 'ESC10':
+	elif cfg.data.acronym == 'ESC10':
 		datamodule = ESC10DataModuleSSL(
 			**datamodule_params,
-			download_dataset=cfg.dataset.download,
-			folds_train=cfg.dataset.folds_train,
-			folds_val=cfg.dataset.folds_val,
+			download_dataset=cfg.data.download,
+			folds_train=cfg.data.folds_train,
+			folds_val=cfg.data.folds_val,
 		)
-	elif cfg.dataset.acronym == 'FSD50K':
+	elif cfg.data.acronym == 'FSD50K':
 		datamodule = FSD50KDataModuleSSL(
 			**datamodule_params,
-			download_dataset=cfg.dataset.download,
-			n_train_steps=cfg.dataset.n_train_steps,
-			sampler_s_balanced=cfg.dataset.sampler_s_balanced,
+			download_dataset=cfg.data.download,
+			n_train_steps=cfg.data.n_train_steps,
+			sampler_s_balanced=cfg.data.sampler_s_balanced,
 		)
-	elif cfg.dataset.acronym == 'GSC':
+	elif cfg.data.acronym == 'GSC':
 		datamodule = GSCDataModuleSSL(
 			**datamodule_params,
-			download_dataset=cfg.dataset.download,
+			download_dataset=cfg.data.download,
 		)
-	elif cfg.dataset.acronym == 'PVC':
+	elif cfg.data.acronym == 'PVC':
 		datamodule = PVCDataModuleSSL(
 			**datamodule_params,
-			n_train_steps_u=cfg.dataset.n_train_steps,
+			n_train_steps_u=cfg.data.n_train_steps,
 		)
-	elif cfg.dataset.acronym == 'UBS8K':
+	elif cfg.data.acronym == 'UBS8K':
 		datamodule = UBS8KDataModuleSSL(
 			**datamodule_params,
-			folds_train=cfg.dataset.folds_train,
-			folds_val=cfg.dataset.folds_val,
+			folds_train=cfg.data.folds_train,
+			folds_val=cfg.data.folds_val,
 		)
 	else:
 		raise RuntimeError(
-			f'Unknown dataset name "{cfg.dataset.acronym}". '
+			f'Unknown dataset name "{cfg.data.acronym}". '
 			f'Must be one of {("ADS", "CIFAR10", "ESC10", "FSD50K", "GSC", "PVC", "UBS8K")}.'
 		)
 

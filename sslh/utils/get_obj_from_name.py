@@ -1,11 +1,11 @@
 
 import math
 
-from torch.nn import Module, BCELoss, LogSigmoid, LogSoftmax, Sigmoid, Softmax, Sequential, Parameter, MSELoss, BCEWithLogitsLoss
+from torch.nn import Module, BCELoss, LogSigmoid, LogSoftmax, Sigmoid, Softmax, Sequential, Parameter, MSELoss, BCEWithLogitsLoss, Identity
 from torch.optim import Optimizer, Adam, SGD
 from typing import Iterator, Union
 
-from mlu.nn import CrossEntropyWithVectors, BCELossBatchMean, Clamp, JSDivLoss, KLDivLossWithProbabilities, Identity
+from mlu.nn import CrossEntropyWithVectors, BCELossBatchMean, Clamp, JSDivLoss, KLDivLossWithProbabilities
 from sslh.callbacks.schedulers import CosineScheduler, SoftCosineScheduler, LRSchedulerCallback
 
 

@@ -17,7 +17,7 @@ DNAME_SPECS = 'mel_64x500'
 class ADSDataModuleSSL(LightningDataModule):
 	def __init__(
 		self,
-		dataset_root: str,
+		root: str,
 		transform_train_s: Optional[Callable] = None,
 		transform_train_u: Optional[Callable] = None,
 		transform_val: Optional[Callable] = None,
@@ -41,7 +41,7 @@ class ADSDataModuleSSL(LightningDataModule):
 
 			Note: The splits of the dataset has the same class distribution.
 
-			:param dataset_root: The root path of the dataset.
+			:param root: The root path of the dataset.
 			:param transform_train_s: The optional transform to apply to supervised train data. (default: None)
 			:param transform_train_u: The optional transform to apply to unsupervised train data. (default: None)
 			:param transform_val: The optional transform to apply to validation data. (default: None)
@@ -68,7 +68,7 @@ class ADSDataModuleSSL(LightningDataModule):
 			raise ValueError(f'Train subsets available are {("balanced", "unbalanced")}.')
 
 		super().__init__()
-		self.dataset_root = dataset_root
+		self.root = root
 		self.transform_train_s = transform_train_s
 		self.transform_train_u = transform_train_u
 		self.transform_val = transform_val
@@ -102,8 +102,8 @@ class ADSDataModuleSSL(LightningDataModule):
 		if pre_computed_specs:
 			self.data_shape = (64, 500)
 			self.data_key = 'data'
-			if osp.basename(self.dataset_root) != DNAME_SPECS:
-				self.dataset_root = osp.join(self.dataset_root, DNAME_SPECS)
+			if osp.basename(self.root) != DNAME_SPECS:
+				self.root = osp.join(self.root, DNAME_SPECS)
 		else:
 			self.data_shape = (320000,)
 			self.data_key = 'waveform'
@@ -114,7 +114,7 @@ class ADSDataModuleSSL(LightningDataModule):
 	def setup(self, stage: Optional[str] = None):
 		if stage == 'fit':
 			dataset_params = dict(
-				root=self.dataset_root,
+				root=self.root,
 				transform=None,
 				rdcc_nbytes=self.rdcc_nbytes,
 				data_shape=self.data_shape,

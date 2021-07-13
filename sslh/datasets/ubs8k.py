@@ -21,7 +21,7 @@ class URBANSOUND8K(Dataset):
 		"""
 		super().__init__()
 		self.root = root
-		self.folds = folds
+		self.folds = list(folds)
 		self.resample_sr = resample_sr
 
 		self.meta = self._load_metadata()

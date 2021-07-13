@@ -26,7 +26,7 @@ dpath_standalone="${dpath_project}/standalone"
 fpath_script="${dpath_standalone}/${fname_script}"
 
 job_name="`basename ${fname_script} .py`"
-dpath_log="${dpath_project}/logs/${dataset}"
+dpath_log="${dpath_project}/logs/sbatch"
 fpath_out="${dpath_log}/${dataset}_%j_${job_name}_${tag}.out"
 fpath_err="${dpath_log}/${dataset}_%j_${job_name}_${tag}.err"
 fpath_singularity=""
