@@ -3,4 +3,4 @@
 name: "MobileNetV1"
 acronym: "MNV1"
 
-n_classes: ${dataset.n_classes}
+n_classes: ${data.n_classes}

@@ -31,8 +31,8 @@ from sslh.utils.test_module import TestModule
 from sslh.utils.test_stack_module import TestStackModule
 
 
-@hydra.main(config_path='../config', config_name='deep_co_training')
-def main(cfg: DictConfig):
+@hydra.main(config_path=osp.join('..', 'config'), config_name='deep_co_training')
+def main(cfg: DictConfig) -> None:
 	# Initialisation
 	reset_seed(cfg.seed)
 	if cfg.verbose:

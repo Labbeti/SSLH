@@ -1,15 +1,17 @@
+
 import hydra
+import os.path as osp
 import tqdm
 
 from hydra.utils import DictConfig
-from sslh.datamodules.fully_supervised import get_fully_datamodule_from_cfg
-from sslh.transforms import get_transform
+from sslh.datamodules.supervised import get_from_cfg
+from sslh.transforms.get_from_name import get_transform
 
 
-@hydra.main(config_path='../config', config_name='supervised')
-def main(cfg: DictConfig):
+@hydra.main(config_path=osp.join('..', 'config'), config_name='supervised')
+def main(cfg: DictConfig) -> None:
 	train_transform = get_transform(cfg.data.acronym, 'identity', **cfg.data.transform)
-	datamodule = get_fully_datamodule_from_cfg(cfg, train_transform, None, None)
+	datamodule = get_from_cfg(cfg, train_transform, None, None)
 	datamodule.prepare_data()
 	datamodule.setup()
 

@@ -2,4 +2,4 @@
 
 name: "None"
 acronym: "none"
-on_epoch: ${dataset.log_on_epoch}
+on_epoch: ${data.log_on_epoch}

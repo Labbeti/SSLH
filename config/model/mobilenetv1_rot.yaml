@@ -3,5 +3,5 @@
 name: "MobileNetV1Rot"
 acronym: "MNV1Rot"
 
-n_classes: ${dataset.n_classes}
+n_classes: ${data.n_classes}
 rot_size: 4

@@ -20,4 +20,4 @@ transform:
   n_mels: 64
   n_time: 500
   n_fft: 2048
-  pre_computed_specs: ${dataset.pre_computed_specs}
+  pre_computed_specs: ${data.pre_computed_specs}

@@ -3,7 +3,7 @@
 defaults:
   - common
   - hydra/job_logging: custom  # redirect log file to output_subdir
-  - dataset: esc10
+  - data: esc10
   - model: wideresnet28
   - optim: adam
   - path: default

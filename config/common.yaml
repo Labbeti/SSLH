@@ -13,15 +13,15 @@ logdir: "../boards"
 resume_path: null
 
 logger:
-  save_dir: "${logdir}/${dataset.acronym}"
+  save_dir: "${logdir}/${data.acronym}"
   name: "${expt.name}"
   version: "${datetime}${tag}"
   default_hp_metric: true
   log_graph: false
 
 checkpoint:
-  monitor: "${dataset.monitor}"
-  mode: "${dataset.monitor_mode}"
+  monitor: "${data.monitor}"
+  mode: "${data.monitor_mode}"
   save_last: true
   save_top_k: 1
   verbose: ${verbose}
@@ -32,7 +32,7 @@ trainer:
   gpus: ${gpus}
   max_steps: null
   resume_from_checkpoint: ${resume_path}
-  val_check_interval: ${dataset.val_check_interval}
+  val_check_interval: ${data.val_check_interval}
   move_metrics_to_cpu: true
   deterministic: true
   terminate_on_nan: true

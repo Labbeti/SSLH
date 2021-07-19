@@ -17,7 +17,7 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.sampler import Sampler
 from typing import List, Tuple
 
-from sslh.datasets.pvc_core import COMPARE2021PRSBase
+from sslh.datasets.pvc_base import COMPARE2021PRSBase
 from sslh.datasets.utils import cache_feature
 
 

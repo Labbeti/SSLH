@@ -3,6 +3,6 @@
 name: "WideResNet28"
 acronym: "WRN28"
 
-n_classes: ${dataset.n_classes}
+n_classes: ${data.n_classes}
 n_input_channels: 1
 width: 2

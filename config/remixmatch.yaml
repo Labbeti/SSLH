@@ -3,7 +3,7 @@
 defaults:
   - common
   - hydra/job_logging: custom
-  - dataset: esc10
+  - data: esc10
   - model: wideresnet28_rot
   - optim: adam
   - path: default

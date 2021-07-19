@@ -3,5 +3,5 @@
 name: "VGGLike"
 acronym: "vgg"
 
-n_classes: ${dataset.n_classes}
+n_classes: ${data.n_classes}
 in_channels: 1

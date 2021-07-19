@@ -16,7 +16,7 @@ from torch import Tensor
 from torch.nn import Module
 from typing import Optional, Tuple
 
-from sslh.datasets.gsc_core import SPEECHCOMMANDS
+from sslh.datasets.gsc_base import SPEECHCOMMANDS
 
 
 URL = 'speech_commands_v0.02'
