@@ -1,9 +1,0 @@
-# @package _group_
-name: WRN28
-fullname: WideResNet28
-num_classes: ${dataset.num_classes}
-activation: "softmax"
-log_activation: "log_softmax"
-
-num_input_channels: 1
-width: 2

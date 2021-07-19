@@ -1,8 +1,0 @@
-# @package _group_
-name: MNV1Rot
-fullname: MobileNetV1Rot
-num_classes: ${dataset.num_classes}
-activation: "softmax"
-log_activation: "log_softmax"
-
-rot_size: 4

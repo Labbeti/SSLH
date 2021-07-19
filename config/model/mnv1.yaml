@@ -1,6 +1,0 @@
-# @package _group_
-name: MNV1
-fullname: MobileNetV1
-num_classes: ${dataset.num_classes}
-activation: "softmax"
-log_activation: "log_softmax"
