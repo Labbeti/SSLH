@@ -68,7 +68,7 @@ class CustomTensorboardLogger(TensorBoardLogger):
 		self,
 		params: Union[Dict[str, Any], Namespace],
 		metrics: Optional[Dict[str, Any]] = None,
-	):
+	) -> None:
 		if metrics is None:
 			metrics = {}
 		self.params_merged.update(params)

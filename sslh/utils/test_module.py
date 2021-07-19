@@ -11,7 +11,7 @@ from mlu.nn import ForwardDictAffix
 
 
 class TestModule(LightningModule):
-	def __init__(self, module: Module, metric_dict: Optional[Dict[str, Module]], prefix: str):
+	def __init__(self, module: Module, metric_dict: Optional[Dict[str, Module]], prefix: str) -> None:
 		"""
 			LightningModule wrapper for module and a metric dict.
 
@@ -27,20 +27,20 @@ class TestModule(LightningModule):
 
 			:param module: The module to wrap for testing the forward output.
 			:param metric_dict: The metric dict object.
-			:param prefix: TODO
+			:param prefix: The prefix used in metrics names.
 		"""
 		super().__init__()
 		self.module = module
 		self.metric_dict = ForwardDictAffix(metric_dict, prefix=prefix)
 
-	def test_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int):
+	def test_step(self, batch: Tuple[Tensor, Tensor], batch_idx: int) -> Dict[str, Tensor]:
 		xs, ys = batch
 		pred_xs = self(xs)
 		scores = self.metric_dict(pred_xs, ys)
-		self.log_dict(scores, on_epoch=True, on_step=False, logger=False, prog_bar=True)
+		self.log_dict(scores, on_epoch=True, on_step=False, logger=False, prog_bar=False)
 		return scores
 
-	def test_epoch_end(self, scores_lst: List[Dict[str, Tensor]]):
+	def test_epoch_end(self, scores_lst: List[Dict[str, Tensor]]) -> None:
 		scores = {
 			name: torch.stack([scores[name] for scores in scores_lst]).mean().item()
 			for name in scores_lst[0].keys()
