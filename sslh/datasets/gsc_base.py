@@ -112,6 +112,8 @@ class SPEECHCOMMANDS(Dataset):
 			print('Dataset already download and verified')
 
 		else:
+			if not os.path.isdir(self.root):
+				os.makedirs(self.root)
 			checksum = _CHECKSUMS.get(self.url, None)
 			download_url(self.url, self.root, hash_value=checksum, hash_type='md5')
 			extract_archive(archive_path, self._path)
