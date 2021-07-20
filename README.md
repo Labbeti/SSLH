@@ -82,7 +82,8 @@ The code use Hydra for parsing args. The syntax of setting an argument is "name=
 
 Example 1 : MixMatch on ESC10
 ```bash
-python mixmatch.py dataset=esc10
+mkdir ../data/ESC10
+python mixmatch.py +dataset=esc10
 ```
 
 Example 2 : Supervised+Weak on GSC
