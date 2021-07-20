@@ -73,7 +73,6 @@ class ESC50Base(Dataset):
 		download: bool = False,
 		transform: Module = None
 	) -> None:
-
 		super().__init__()
 
 		self.root = root
@@ -160,8 +159,10 @@ class ESC50Base(Dataset):
 			print('Dataset already downloaded and verified.')
 
 		else:
+			if not os.path.isdir(self.root):
+				os.makedirs(self.root)
+			
 			archive_path = os.path.join(self.root, FOLDER_IN_ARCHIVE + '.zip')
-
 			download_url(self.url, self.root)
 			extract_archive(archive_path, self.root)
 

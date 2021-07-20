@@ -9,15 +9,16 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 
 class URBANSOUND8K(Dataset):
-	N_CLASSES = 10
+	ROOT_DNAME: str = 'UrbanSound8K'
+	N_CLASSES: int = 10
 
-	def __init__(self, root: str, folds: List[int], resample_sr: int = 22050):
+	def __init__(self, root: str, folds: List[int], resample_sr: int = 22050) -> None:
 		"""
 			UBS8K dataset.
 
 			:param root: The directory path to the dataset root.
 			:param folds: The folds to use.
-			:param resample_sr:
+			:param resample_sr: The resample rate of the waveform.
 		"""
 		super().__init__()
 		self.root = root
@@ -25,7 +26,7 @@ class URBANSOUND8K(Dataset):
 		self.resample_sr = resample_sr
 
 		self.meta = self._load_metadata()
-		self.wav_dir = os.path.join(root, 'UrbanSound8K', 'audio')
+		self.wav_dir = os.path.join(root, self.ROOT_DNAME, 'audio')
 
 	def __getitem__(self, idx) -> Tuple[Tensor, int]:
 		filename = self.meta['filename'][idx]
@@ -45,10 +46,10 @@ class URBANSOUND8K(Dataset):
 		return len(self.meta['filename'])
 
 	def _load_metadata(self) -> Dict[str, list]:
-		csv_path = os.path.join(self.root, 'UrbanSound8K', 'metadata', 'UrbanSound8K.csv')
+		csv_path = os.path.join(self.root, self.ROOT_DNAME, 'metadata', 'UrbanSound8K.csv')
 
-		with open(csv_path) as f:
-			lines = f.read().splitlines()
+		with open(csv_path) as file:
+			lines = file.read().splitlines()
 			lines = lines[1:]  # remove the header
 
 		info = {'filename': [], 'fold': [], 'target': []}
@@ -69,7 +70,8 @@ class URBANSOUND8K(Dataset):
 		if len(waveform.shape) == 2:
 			if waveform.shape[0] == 1:
 				return waveform
-			return waveform.mean(dim=0)
+			else:
+				return waveform.mean(dim=0)
 		else:
 			raise ValueError(
 				f'waveform tensor should be of shape (channels, time). currently is of shape {waveform.shape}'

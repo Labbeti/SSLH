@@ -1,5 +1,6 @@
 # @package _group_
 
+# 0.5 * (1.0 + math.cos(math.pi * min(step / n_steps, 1.0)))
 name: "SoftCosineScheduler"
 acronym: "softcosine"
 on_epoch: ${data.log_on_epoch}

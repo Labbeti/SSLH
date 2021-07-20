@@ -1,4 +1,6 @@
 
+import torch
+
 from torchvision.transforms import ToTensor, Normalize
 from typing import Callable, List, Optional
 
@@ -33,7 +35,7 @@ def get_transform_cifar10(
 
 
 def get_target_transform_cifar10(smooth: Optional[float] = None) -> Callable:
-	return OneHot(N_CLASSES, smooth)
+	return OneHot(N_CLASSES, smooth, dtype=torch.float)
 
 
 def get_self_transform_cifar10(**kwargs) -> Callable:

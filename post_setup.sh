@@ -6,7 +6,6 @@ for dir in logs boards
 do
   for dataset in ADS CIFAR10 ESC10 FSD50K GSC PVC UBS8K
   do
-    echo "Building directory '$root/$dir/$dataset' ..."
     mkdir -p $root/$dir/$dataset
   done
 done

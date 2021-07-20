@@ -64,7 +64,7 @@ AudioSet (ADS) and Primate Vocalize Corpus (PVC) cannot be installed automatical
 [comment]: <> (TODO : For PVC install !)
 
 ## Usage
-The main scripts available are in directory ```standalone``` :
+The main scripts available are in ```standalone``` directory :
 ```
 standalone
 ├── deep_co_training.py
@@ -82,27 +82,49 @@ The code use Hydra for parsing args. The syntax of setting an argument is "name=
 
 Example 1 : MixMatch on ESC10
 ```bash
-python mixmatch.py dataset=esc10
+python mixmatch.py data=esc10
 ```
 
 Example 2 : Supervised+Weak on GSC
 ```bash
-python supervised.py dataset=gsc expt.augm_train=weak bsize=256 epochs=300
+python supervised.py data=gsc expt.augm_train=weak bsize=256 epochs=300
 ```
 
 Example 3 : FixMatch+MixUp on UBS8K
 ```bash
-python fixmatch.py dataset=ubs8K dataset.root="../data/UBS8K" expt=fixmatch_mixup bsize_s=128 bsize_u=128 epochs=300
+python fixmatch.py data=ubs8K expt=fixmatch_mixup bsize_s=128 bsize_u=128 epochs=300
 ```
-(note: default folds used are in "config/dataset/ubs8k.yaml")
+(note: default folds used for UBS8K are in "config/data/ubs8k.yaml")
+
+Example 4 : ReMixMatch on CIFAR-10
+```bash
+python remixmatch.py data=cifar10 model.n_input_channels=3
+```
+
+## List of main arguments
+
+| Name | Description | Values | Default |
+| --- | --- | --- | --- |
+| data | Dataset used | ads, cifar10, esc10, fsd50k, gsc, pvc, ubs8k | esc10 |
+| expt | Training method (experiment) used | *(depends of the python script, see the filenames in config/expt/ folder)* | *(depends of the python script)* |
+| model | Pytorch model to use | mobilenetv1, mobilenetv2, vgg, wideresnet28 | wideresnet28 |
+| optim | Optimizer used | adam, sgd | adam |
+| sched | Learning rate scheduler | cosine, softcosine, none | softcosine |
+| epochs | Number of training epochs | int | 1 |
+| bsize | Batch size in SUP methods | int | 60 |
+| ratio | Ratio of the training data used in SUP methods | float in [0, 1] | 1.0 |
+| bsize_s | Batch size of supervised part in SSL methods | int | 30 |
+| bsize_u | Batch size of unsupervised part in SSL methods | int | 30 |
+| ratio_s | Ratio of the supervised training data used in SSL methods | float in [0, 1] | 0.1 |
+| ratio_u | Ratio of the unsupervised training data used in SSL methods | float in [0, 1] | 0.9 |
+
 
 ## SSLH Package overview
 ```
 sslh
 ├── callbacks
 ├── datamodules
-│     ├── fully_supervised
-│     ├── partial_supervised
+│     ├── supervised
 │     └── semi_supervised
 ├── datasets
 ├── expt
@@ -129,7 +151,7 @@ This repository has been created by Etienne Labbé (Labbeti on Github).
 
 It contains also some code from the following authors :
 - Léo Cancès (leocances on github)
-  - For AudioSet, ESC10, GSC, PVC and UBS8K datasets.
+  - For AudioSet, ESC10, GSC, PVC and UBS8K datasets base code.
 - Qiuqiang Kong (qiuqiangkong on Github)
   - For MobileNetV1 & V2 model implementation from [PANN](https://github.com/qiuqiangkong/audioset_tagging_cnn).
 
@@ -161,5 +183,6 @@ It contains also some code from the following authors :
 | _s | Supervised |
 | sched | Scheduler |
 | SSL | Semi-Supervised Learning |
+| SUP | Supervised Learning |
 | _u | Unsupervised |
 | UBS8K | UrbanSound8K dataset |

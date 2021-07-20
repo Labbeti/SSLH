@@ -4,19 +4,19 @@ from torch import Tensor
 
 
 class AveragePred:
-	def __init__(self, history: int = 128):
+	def __init__(self, history: int = 128) -> None:
 		self.history = history
 		self.preds = []
 		self.cur_idx = 0
 
-	def reset(self):
+	def reset(self) -> None:
 		"""
 			Reset the history.
 		"""
 		self.preds = []
 		self.cur_idx = 0
 
-	def add_pred(self, pred: Tensor):
+	def add_pred(self, pred: Tensor) -> None:
 		"""
 			Add a batch of predictions of shape (bsize, n_classes) to the history for computing the classes distributions.
 		"""
