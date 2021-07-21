@@ -10,7 +10,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from torch import Tensor
 from typing import Any, Dict, Optional, Union
 
-from mlu.utils.misc import get_current_git_hash
+from sslh.utils.misc import get_current_git_hash
 
 
 class CustomTensorboardLogger(TensorBoardLogger):
