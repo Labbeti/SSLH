@@ -66,8 +66,8 @@ class DeepCoTraining(LightningModule):
 		self.lambda_cot = lambda_cot
 		self.lambda_diff = lambda_diff
 
-		self.metric_dict_train_f_s = ForwardDictAffix(train_metrics, prefix='train/', suffix='_fs')
-		self.metric_dict_train_g_s = ForwardDictAffix(train_metrics, prefix='train/', suffix='_gs')
+		self.metric_dict_train_f = ForwardDictAffix(train_metrics, prefix='train/', suffix='_fs')
+		self.metric_dict_train_g = ForwardDictAffix(train_metrics, prefix='train/', suffix='_gs')
 		self.metric_dict_val_f = ForwardDictAffix(val_metrics, prefix='val/')
 		self.metric_dict_val_g = ForwardDictAffix(val_metrics, prefix='val/', suffix='_g')
 		self.metric_dict_test_f = ForwardDictAffix(val_metrics, prefix='test/', suffix='_f')
