@@ -1,0 +1,4 @@
+# @package trans
+
+_target_: "sslh.transforms.other.noise.GaussianNoise"
+snr_db: 15.0

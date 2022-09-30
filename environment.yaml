@@ -4,20 +4,23 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pytorch~=1.7.1
-  - torchaudio~=0.7.2
-  - torchvision~=0.8.2
-  - pytorch-lightning~=1.2.3
-  - pip
+  - pytorch=1.7.1
+  - torchaudio=0.7.2
+  - torchvision=0.8.2
+  - pytorch-lightning=1.2.3
+  - pip>=22.1.2
   - tensorboard
   - matplotlib
-  - numpy
-  - librosa
-  - h5py
-  - pandas
-  - tqdm
+  - numpy=1.22.4
+  - librosa=0.9.1
+  - h5py=3.6.0
+  - pandas=1.4.2
+  - tqdm=4.64.0
+  - black=21.12b0
+  - click=8.0.4
+  - pyyaml=6.0
+  - soundfile=0.10.3.post1
   - pip:
-    - advertorch
-    - soundfile
-    - hydra-core~=1.0.6
-    - git+https://github.com/Labbeti/MLU@dev
+    - advertorch==0.2.3
+    - hydra-core==1.1.2
+    - hydra-colorlog==1.2.0

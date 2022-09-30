@@ -1,0 +1,9 @@
+# @package warmup
+
+_target_: "sslh.callbacks.warmup.WarmUpCallback"
+
+target_value: ${pl.lambda_ccost}
+warmup_len: 50
+warmup_rule: "exp_increase"
+on_epoch: true
+target_attr: "lambda_ccost"

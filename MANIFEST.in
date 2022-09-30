@@ -1,3 +1,4 @@
 
 include README.md
 graft notebooks/
+graft conf/

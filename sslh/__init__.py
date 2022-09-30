@@ -1,9 +1,10 @@
-"""
-	Semi-Supervised Learning with Holistic methods (SSLH)
-"""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-__author__ = 'Etienne Labbé - 2021'
-__email__ = 'etienne.labbe31@gmail.com'
-__maintainer__ = 'Etienne Labbé'
-__status__ = 'Released'
-__version__ = '2.2.6'
+"""Semi-Supervised Learning with Holistic methods (SSLH) """
+
+__author__ = "Etienne Labbé (Labbeti)"
+__maintainer__ = "Etienne Labbé (Labbeti)"
+__name__ = "sslh"
+__status__ = "Released"
+__version__ = "3.0.0"

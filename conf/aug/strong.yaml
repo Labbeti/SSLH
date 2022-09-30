@@ -1,0 +1,20 @@
+# @package aug
+
+- type: "waveform"
+  aug:
+    _target_: "sslh.transforms.waveform.occlusion.Occlusion"
+    scales: [0.0, 0.75]
+    p: 1.0
+- type: "waveform"
+  aug:
+    _target_: "sslh.transforms.waveform.resample_pad_crop.ResamplePadCrop"
+    rates: [0.25, 1.75]
+    align: "random"
+    p: 1.0
+- type: "spectrogram"
+  aug:
+    _target_: "sslh.transforms.spectrogram.cutoutspec.CutOutSpec"
+    freq_scales: [0.5, 1.0]
+    time_scales: [0.5, 1.0]
+    fill_value: -80.0
+    p: 1.0

@@ -1,0 +1,11 @@
+# @package path
+
+log_root: "/homelocal/labbeti/Desktop/root_sslh/SSLH/logs"
+
+ads: null
+cifar10: "/homelocal/labbeti/Desktop/root_sslh/SSLH/data/CIFAR10"
+esc10: "/homelocal/labbeti/Desktop/root_sslh/SSLH/data/ESC10"
+fsd50k: null
+gsc: "/homelocal/labbeti/Desktop/root_sslh/SSLH/data/GSC"
+pvc: "/homelocal/labbeti/Desktop/root_sslh/SSLH/data"
+ubs8k: "/homelocal/labbeti/Desktop/root_sslh/SSLH/data/UrbanSound8K"

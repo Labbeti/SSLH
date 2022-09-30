@@ -1,117 +1,89 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.callbacks import Callback
+import math
+
 from typing import Any, Optional
 
-
-class WarmUp:
-	def __init__(
-		self,
-		target_value: float,
-		n_steps: Optional[int] = None,
-		target_obj: Optional[object] = None,
-		target_attribute: Optional[str] = None,
-		start_value: float = 0.0,
-	):
-		super().__init__()
-		self.target_value = target_value
-		self.target_obj = target_obj
-		self.target_attribute = target_attribute
-		self.start_value = start_value
-
-		self._step = 0
-		self._n_steps = n_steps if n_steps is not None else 1
-
-		self._update_target()
-
-	def step(self):
-		self._step += 1
-		self._update_target()
-
-	def set_and_update(self, step: int, n_steps: int):
-		self._step = step
-		self._n_steps = n_steps
-		self._update_target()
-
-	def get_ratio(self) -> float:
-		return min(self._step / self._n_steps, 1.0)
-
-	def get_value(self) -> float:
-		return (self.target_value - self.start_value) * self.get_ratio() + self.start_value
-
-	def get_step(self) -> int:
-		return self._step
-
-	def get_n_steps(self) -> int:
-		return self._n_steps
-
-	def has_valid_target(self) -> bool:
-		return self.target_obj is not None and self.target_attribute is not None
-
-	def _update_target(self):
-		if self.has_valid_target():
-			value = self.get_value()
-			self.target_obj.__setattr__(self.target_attribute, value)
+from pytorch_lightning.callbacks import Callback
 
 
-class WarmUpCallback(WarmUp, Callback):
-	def __init__(
-		self,
-		target_value: float,
-		start_value: float = 0.0,
-		n_steps: Optional[int] = None,
-		ratio_n_steps: Optional[float] = None,
-		target_obj: Optional[object] = None,
-		target_attribute: Optional[str] = None,
-		on_epoch: bool = False,
-	):
-		if n_steps is not None and ratio_n_steps is not None:
-			raise ValueError('Options "target_n_steps" and "target_ratio_n_steps" are mutually exclusive.')
+class WarmUpCallback(Callback):
+    WARMUP_RULES = ("constant", "linear_increase", "exp_increase")
 
-		WarmUp.__init__(
-			self,
-			target_value=target_value,
-			start_value=start_value,
-			n_steps=n_steps,
-			target_obj=target_obj,
-			target_attribute=target_attribute,
-		)
-		Callback.__init__(self)
+    def __init__(
+        self,
+        target_value: float,
+        warmup_len: int,
+        warmup_rule: str = "linear_increase",
+        on_epoch: bool = False,
+        target_obj: Optional[object] = None,
+        target_attr: Optional[str] = None,
+        start_value: float = 0.0,
+    ) -> None:
+        """
+        Note: exp_increase warmup : https://arxiv.org/pdf/1803.05984.pdf and https://arxiv.org/pdf/1610.02242.pdf
+        """
+        if warmup_rule not in self.WARMUP_RULES:
+            raise ValueError(
+                f"Invalid argument {warmup_rule=}. Expected one of {self.WARMUP_RULES}."
+            )
+        if (target_obj is not None and target_attr is None) or (
+            target_obj is None and target_attr is not None
+        ):
+            raise ValueError(
+                f"Invalid combinaison of arguments {target_obj=} and {target_attr=}. (expected (None, None) or (object, str))"
+            )
 
-		self.target_ratio_n_steps = ratio_n_steps
-		self.on_epoch = on_epoch
+        super().__init__()
+        self.target_value = target_value
+        self.warmup_rule = warmup_rule
+        self.warmup_len = warmup_len
+        self.on_epoch = on_epoch
+        self.target_obj = target_obj
+        self.target_attr = target_attr
+        self.start_value = start_value
 
-	def on_train_batch_end(
-		self,
-		trainer: Trainer,
-		pl_module: LightningModule,
-		outputs: Any,
-		batch: Any,
-		batch_idx: int,
-		dataloader_idx: int
-	) -> None:
-		if not self.on_epoch:
-			step = pl_module.global_step
-			if self.target_ratio_n_steps is not None:
-				n_steps = int(self.target_ratio_n_steps * trainer.num_training_batches * trainer.max_epochs)
-			elif self.get_n_steps() is not None:
-				n_steps = self.get_n_steps()
-			else:
-				n_steps = trainer.num_training_batches * trainer.max_epochs
-			self.set_and_update(step, n_steps)
+        self._cur_warmup_step = 0
 
-	def on_train_epoch_end(
-		self,
-		trainer: Trainer,
-		pl_module: LightningModule,
-		outputs: Any,
-	) -> None:
-		if self.on_epoch:
-			step = pl_module.current_epoch
-			if self.target_ratio_n_steps is not None:
-				n_steps = int(self.target_ratio_n_steps * trainer.max_epochs)
-			elif self.get_n_steps() is not None:
-				n_steps = self.get_n_steps()
-			else:
-				n_steps = trainer.max_epochs
-			self.set_and_update(step, n_steps)
+    def on_train_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs: Any,
+        batch: Any,
+        batch_idx: int,
+        dataloader_idx: int,
+    ) -> None:
+        if not self.on_epoch:
+            self.update()
+
+    def on_train_epoch_end(self, trainer, pl_module, outputs: Any) -> None:
+        if self.on_epoch:
+            self.update()
+
+    def update(self) -> None:
+        if self.target_obj is not None and self.target_attr is not None:
+            cur_value = self.get_cur_value()
+            self.target_obj.__setattr__(self.target_attr, cur_value)  # type: ignore
+        self._cur_warmup_step += 1
+
+    def get_cur_value(self) -> float:
+        if self.warmup_rule == "constant":
+            coef = 1.0
+        elif self.warmup_rule == "linear_increase":
+            coef = self._cur_warmup_step / self.warmup_len
+        elif self.warmup_rule == "exp_increase":
+            coef = math.exp(
+                -5.0 * (1.0 - min(self._cur_warmup_step / self.warmup_len, 1.0)) ** 2
+            )
+        else:
+            raise ValueError(
+                f"Invalid argument {self.warmup_rule=}. Expected one of {self.WARMUP_RULES}."
+            )
+
+        cur_value = coef * (self.target_value - self.start_value) + self.start_value
+        return cur_value
+
+    def get_cur_step(self) -> int:
+        return self._cur_warmup_step

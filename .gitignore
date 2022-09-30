@@ -25,7 +25,8 @@ img/
 *.err
 *.out
 *.torch
-*ign*
+*.ign*
+*_ign*
 .tmp*
 
 # Specific files

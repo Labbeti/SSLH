@@ -1,0 +1,11 @@
+# @package path
+
+log_root: "logs"
+
+ads: "data/ADS"
+cifar10: "data/CIFAR10"
+esc10: "data/ESC10"
+fsd50k: "data/FSD50K"
+gsc: "data/GSC"
+pvc: "data/PVC"
+ubs8k: "data/UrbanSound8K"

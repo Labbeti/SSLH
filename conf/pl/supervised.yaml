@@ -1,0 +1,7 @@
+# @package pl
+
+_target_: "sslh.pl_modules.supervised.supervised.Supervised"
+
+activation: "softmax"
+criterion: "CrossEntropy"
+reduction: "mean"

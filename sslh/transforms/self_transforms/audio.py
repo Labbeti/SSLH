@@ -1,32 +1,82 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from typing import Callable, Tuple
 
 import torch
 
-from torch import Tensor
+from torch import nn, Tensor
 from torch.nn.functional import one_hot
-from typing import Callable, Tuple
 
-from mlu.transforms import Compose, Identity
-from mlu.transforms.spectrogram import HorizontalFlip, VerticalFlip
+from sslh.transforms.spectrogram.flips import HorizontalFlip, VerticalFlip
 
 
-def get_self_transform_flips() -> Callable:
-	transforms = [
-		Identity(),
-		HorizontalFlip(),
-		VerticalFlip(),
-		Compose(HorizontalFlip(), VerticalFlip()),
-	]
+def get_self_transform_hvflips() -> Callable:
+    transforms = [
+        nn.Identity(),
+        HorizontalFlip(),
+        VerticalFlip(),
+        nn.Sequential(HorizontalFlip(), VerticalFlip()),
+    ]
 
-	def generate_flips(x: Tensor) -> Tuple[Tensor, Tensor]:
-		bsize = len(x)
-		class_idx = torch.randint(low=0, high=len(transforms), size=(bsize,))
+    def self_transform(x: Tensor) -> Tuple[Tensor, Tensor]:
+        bsize = len(x)
+        transform_indexes = torch.randint(
+            low=0, high=len(transforms), size=(bsize,), device=x.device
+        )
 
-		xr = torch.empty_like(x)
-		for i, image in enumerate(x):
-			transform = transforms[class_idx[i]]
-			xr[i] = transform(image)
+        xr = torch.empty_like(x)
+        for i, xi in enumerate(x):
+            transform = transforms[transform_indexes[i]]
+            xr[i] = transform(xi)
 
-		yr = one_hot(class_idx, len(transforms)).to(device=x.device, dtype=x.dtype)
-		return xr, yr
+        yr = one_hot(transform_indexes, len(transforms))
+        return xr, yr
 
-	return generate_flips
+    return self_transform
+
+
+def get_self_transform_hflip() -> Callable:
+    transforms = [
+        nn.Identity(),
+        HorizontalFlip(),
+    ]
+
+    def self_transform(x: Tensor) -> Tuple[Tensor, Tensor]:
+        bsize = len(x)
+        transform_indexes = torch.randint(
+            low=0, high=len(transforms), size=(bsize,), device=x.device
+        )
+
+        xr = torch.empty_like(x)
+        for i, xi in enumerate(x):
+            transform = transforms[transform_indexes[i]]
+            xr[i] = transform(xi)
+
+        yr = one_hot(transform_indexes, len(transforms))
+        return xr, yr
+
+    return self_transform
+
+
+def get_self_transform_vflip() -> Callable:
+    transforms = [
+        nn.Identity(),
+        VerticalFlip(),
+    ]
+
+    def self_transform(x: Tensor) -> Tuple[Tensor, Tensor]:
+        bsize = len(x)
+        transform_indexes = torch.randint(
+            low=0, high=len(transforms), size=(bsize,), device=x.device
+        )
+
+        xr = torch.empty_like(x)
+        for i, xi in enumerate(x):
+            transform = transforms[transform_indexes[i]]
+            xr[i] = transform(xi)
+
+        yr = one_hot(transform_indexes, len(transforms))
+        return xr, yr
+
+    return self_transform

@@ -1,0 +1,11 @@
+# @package path
+
+log_root: "/tmpdir/labbe/sslh_logs"
+
+ads: "/tmpdir/cances/corpus/AudioSet/hdfs"
+cifar10: "/tmpdir/labbe/corpus/CIFAR10"
+esc10: "/tmpdir/labbe/corpus/ESC10"
+fsd50k: null
+gsc: "/tmpdir/labbe/corpus/GSC"
+pvc: "/tmpdir/labbe/corpus/PVC"
+ubs8k: "/tmpdir/labbe/corpus/UrbanSound8K"

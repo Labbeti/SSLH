@@ -1,0 +1,34 @@
+# @package _global_
+
+cpus: 12
+datetime: "${now:%Y-%m-%d_%H-%M-%S}"
+debug: false
+epochs: 300
+gpus: 1
+ignore_user_warnings: true
+max_steps: null
+resume_path: null
+seed: 1234
+tag: "NOTAG"
+verbose: 1
+
+ckpt:
+  mode: "${data.monitor_mode}"
+  monitor: "${data.monitor}"
+  save_last: true
+  save_top_k: 1
+  verbose: ${verbose}
+
+logger:
+  save_dir: "${path.log_root}/${hydra:runtime.choices.data}"
+  name: "${hydra:runtime.choices.pl}"
+  version: "${datetime}_${tag}"
+  default_hp_metric: true
+  log_graph: false
+
+hydra:
+  # Set args save in board dir
+  output_subdir: "${logger.save_dir}/${logger.name}/${logger.version}/hydra"
+  # Set hydra working dir
+  run:
+    dir: "./"

@@ -1,73 +1,81 @@
-"""
-	Primate Vocalisations Corpus (PVC) core classes and functions.
-	Developed by Léo Cances (leocances on Github).
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-	Modified : Yes
-		- typing & imports
+"""
+Primate Vocalisations Corpus (PVC) core classes and functions.
+Developed by Léo Cances (leocances on Github).
+
+Modified : Yes
+    - typing & imports
 """
 
 import os
 import os.path as osp
+
+from typing import Tuple
+
 import torchaudio
 
 from torch.utils.data.dataset import Dataset
 from torch import Tensor
-from typing import Tuple
 
 
 class COMPARE2021PRSBase(Dataset):
-	CLASSES = ['background', 'chimpanze', 'geunon', 'mandrille', 'redcap']
+    CLASSES = ["background", "chimpanze", "geunon", "mandrille", "redcap"]
 
-	def __init__(self, root: str, subset: str) -> None:
-		assert subset in ['train', 'test', 'devel']
-		self.root = root
-		self.subset = subset
+    def __init__(self, root: str = "data", subset: str = "train") -> None:
+        SUBSETS = ("train", "test", "devel")
+        if subset not in SUBSETS:
+            raise ValueError(f"Invalid argument {subset=}. Expected one of {SUBSETS}.")
 
-		self.subsets_info = self._load_csv()
-		self.wav_dir = os.path.join(self.root, 'ComParE2021_PRS', 'dist', 'wav')
+        self.root = root
+        self.subset = subset
 
-		if not osp.isdir(root):
-			raise RuntimeError(f'Invalid root dirpath "{root}".')
+        self.subsets_info = self._load_csv()
+        self.wav_dir = os.path.join(self.root, "ComParE2021_PRS", "dist", "wav")
 
-	def __getitem__(self, idx: int) -> Tuple[Tensor, int]:
-		audio_name = self.subsets_info['audio_names'][idx]
-		target = self.subsets_info['target'][idx]
-		file_path = os.path.join(self.wav_dir, audio_name)
+        if not osp.isdir(root):
+            raise RuntimeError(f'Invalid root dirpath "{root}".')
 
-		waveform, sr = torchaudio.load(file_path)
+    def __getitem__(self, idx: int) -> Tuple[Tensor, int]:
+        audio_name = self.subsets_info["audio_names"][idx]
+        target = self.subsets_info["target"][idx]
+        file_path = os.path.join(self.wav_dir, audio_name)
 
-		return waveform, target
+        waveform, sr = torchaudio.load(file_path)  # type: ignore
 
-	def __len__(self):
-		return len(self.subsets_info['audio_names'])
+        return waveform, target
 
-	def _to_cls_idx(self, target_str: str) -> int:
-		if target_str == '?':
-			return -1
+    def __len__(self):
+        return len(self.subsets_info["audio_names"])
 
-		return COMPARE2021PRSBase.CLASSES.index(target_str)
+    def _to_cls_idx(self, target_str: str) -> int:
+        if target_str == "?":
+            return -1
 
-	def _load_csv(self):
-		def read_csv(path) -> dict:
-			with open(path, 'r') as f:
-				lines = f.read().splitlines()
-				lines = lines[1:]
+        return COMPARE2021PRSBase.CLASSES.index(target_str)
 
-			output = {
-				'audio_names': [line.split(',')[0] for line in lines],
-				'target': [self._to_cls_idx(line.split(',')[1]) for line in lines],
-			}
+    def _load_csv(self):
+        def read_csv(path) -> dict:
+            with open(path, "r") as f:
+                lines = f.read().splitlines()
+                lines = lines[1:]
 
-			return output
+            output = {
+                "audio_names": [line.split(",")[0] for line in lines],
+                "target": [self._to_cls_idx(line.split(",")[1]) for line in lines],
+            }
 
-		csv_root = os.path.join(self.root, 'ComParE2021_PRS', 'dist', 'lab')
-		if not osp.isdir(csv_root):
-			raise RuntimeError(f'Invalid CSV root dirpath "{csv_root}".')
+            return output
 
-		if self.subset == 'train':
-			return read_csv(os.path.join(csv_root, 'train.csv'))
+        csv_root = os.path.join(self.root, "ComParE2021_PRS", "dist", "lab")
+        if not osp.isdir(csv_root):
+            raise RuntimeError(f'Invalid CSV root dirpath "{csv_root}".')
 
-		elif self.subset == 'test':
-			return read_csv(os.path.join(csv_root, 'test.csv'))
+        if self.subset == "train":
+            return read_csv(os.path.join(csv_root, "train.csv"))
 
-		return read_csv(os.path.join(csv_root, 'devel.csv'))
+        elif self.subset == "test":
+            return read_csv(os.path.join(csv_root, "test.csv"))
+
+        return read_csv(os.path.join(csv_root, "devel.csv"))

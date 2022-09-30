@@ -1,0 +1,3 @@
+# @package activation
+
+_target_: "torch.nn.modules.activation.Sigmoid"

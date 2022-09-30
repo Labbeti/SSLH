@@ -1,0 +1,14 @@
+# @package aug
+
+- type: "spectrogram"
+  aug:
+    _target_: "sslh.transforms.spectrogram.spec_aug.SpecAugmentation"
+    # default hparams source : https://github.com/qiuqiangkong/audioset_tagging_cnn/blob/master/pytorch/models.py#L163
+    time_drop_width: 64
+    time_stripes_num: 2
+    freq_drop_width: 8
+    freq_stripes_num: 2
+    time_dim: 3
+    freq_dim: 2
+    inplace: true
+    p: 1.0

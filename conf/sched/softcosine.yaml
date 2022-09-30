@@ -1,0 +1,6 @@
+# @package sched
+
+# 0.5 * (1.0 + math.cos(math.pi * min(step / n_steps, 1.0)))
+_target_: "sslh.callbacks.schedulers.SoftCosineScheduler"
+
+on_epoch: ${data.log_on_epoch}

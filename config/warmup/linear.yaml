@@ -1,6 +1,0 @@
-# @package _group_
-
-name: "linear"
-n_steps: null
-ratio_n_steps: 0.5
-on_epoch: false

@@ -1,0 +1,14 @@
+# @package aug
+
+- type: "image"
+  aug:
+    _target_: "sslh.transforms.image.rand_augment.RandAugment"
+    n_augm_apply: 1
+    magnitude_policy: "random"
+    p: 1.0
+- type: "image"
+  aug:
+    _target_: "sslh.transforms.image.pil.CutOutImgPIL"
+    scales: [0.2, 0.5]
+    fill_value: 0
+    p: 1.0

@@ -1,0 +1,3 @@
+# @package sched
+
+_target_: "sslh.utils.hydra.get_none"

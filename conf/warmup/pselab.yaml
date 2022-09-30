@@ -1,0 +1,9 @@
+# @package warmup
+
+_target_: "sslh.callbacks.warmup.WarmUpCallback"
+
+target_value: ${pl.lambda_u}
+warmup_len: 100
+warmup_rule: "linear_increase"
+on_epoch: false
+target_attr: "lambda_u"

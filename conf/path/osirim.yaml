@@ -1,0 +1,11 @@
+# @package path
+
+log_root: "/users/samova/elabbe/root_sslh/SSLH/logs"
+
+ads: "/projets/samova/leocances/AudioSet/hdfs"
+cifar10: "/projets/samova/elabbe/corpus/CIFAR10"
+esc10: "/projets/samova/elabbe/corpus/ESC10"
+fsd50k: null
+gsc: "/projets/samova/elabbe/corpus/GSC"
+pvc: "/projets/samova/leocances"
+ubs8k: "/projets/samova/leocances/UrbanSound8K"

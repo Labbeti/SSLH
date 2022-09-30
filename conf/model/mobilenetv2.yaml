@@ -1,0 +1,5 @@
+# @package model
+
+_target_: "sslh.mobilenet.MobileNetV2"
+
+n_classes: ${data.n_classes}

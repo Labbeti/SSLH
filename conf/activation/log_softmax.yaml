@@ -1,0 +1,4 @@
+# @package activation
+
+_target_: "torch.nn.modules.activation.LogSoftmax"
+dim: -1

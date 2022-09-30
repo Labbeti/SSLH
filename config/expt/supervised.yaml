@@ -1,9 +1,0 @@
-# @package _group_
-
-name: "Supervised"
-acronym: "sup"
-
-activation: "softmax"
-criterion: "CrossEntropy"
-reduction: "mean"
-augm_train: "identity"

@@ -1,0 +1,15 @@
+# @package aug
+
+- type: "image"
+  aug:
+    _target_: "torchvision.transforms.transforms.RandomVerticalFlip"
+    p: 0.5
+- type: "image"
+  aug:
+    _target_: "torchvision.transforms.transforms.RandomVerticalFlip"
+    p: 0.25
+- type: "image"
+  aug:
+    _target_: "torchvision.transforms.transforms.RandomCrop"
+    size: [32, 32]
+    padding: 8

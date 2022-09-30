@@ -1,0 +1,24 @@
+# @package data
+
+log_on_epoch: true
+monitor: "val/acc"
+monitor_mode: "max"
+n_classes: 35
+sample_rate: 16000
+val_check_interval: 1.0
+
+spectro:
+  n_mels: 64
+  hop_length: 512
+  n_fft: 2048
+
+dm:
+  _target_: "sslh.datamodules.supervised.gsc.GSCSupDataModule"
+  root: "${path.gsc}"
+  bsize: 256
+  n_workers: 4
+  drop_last: false
+  pin_memory: False
+  ratio: 1.0
+
+  download: false

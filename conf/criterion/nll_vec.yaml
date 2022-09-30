@@ -1,0 +1,3 @@
+# @package criterion
+
+_target_: "sslh.nn.loss.NLLLossVecTargets"

@@ -1,0 +1,11 @@
+# @package pl
+
+_target_: "sslh.pl_modules.uda.uda.UDA"
+
+activation: "softmax"
+criterion_s: "CrossEntropy"
+criterion_u: "CrossEntropy"
+reduction: "none"
+lambda_u: 1.0
+threshold: 0.8
+temperature: 0.5

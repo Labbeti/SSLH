@@ -1,34 +1,52 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-from typing import List, Tuple, Union
+import logging
+
+from typing import Iterable, List, Tuple, Union
+
+logger = logging.getLogger(__name__)
 
 
 def guess_folds(
-	folds_train: Union[List[int], int, None],
-	folds_val: Union[List[int], int, None],
-	folds: List[int],
+    train_folds: Union[Iterable[int], int, None],
+    val_folds: Union[Iterable[int], int, None],
+    folds: Iterable[int],
+    verbose: int = 0,
 ) -> Tuple[List[int], List[int]]:
-	"""
-		Use the folds_train and folds to guess folds_val OR use the folds_val and folds to guess folds_train.
+    """
+    Use the train_folds and folds to guess val_folds OR use the val_folds and folds to guess train_folds.
 
-		:param folds_train: The training folds.
-		:param folds_val: The validation folds.
-		:param folds: The list of folds.
-		:return: A tuple of folds (training folds, validation folds).
-	"""
-	if isinstance(folds_train, int):
-		folds_train = [folds_train]
-	if isinstance(folds_val, int):
-		folds_val = [folds_val]
-	folds = set(folds)
+    :param train_folds: The training folds.
+    :param val_folds: The validation folds.
+    :param folds: The list of folds.
+    :return: A tuple of folds (training folds, validation folds).
+    """
+    if verbose >= 2:
+        logger.debug(f"Guessing folds with {train_folds=} and {val_folds=}. ({folds=})")
 
-	if folds_train is None and folds_val is None:
-		folds_val = [len(folds)]
-		folds_train = list(folds.difference(folds_val))
+    if isinstance(train_folds, int):
+        train_folds = [train_folds]
+    if isinstance(val_folds, int):
+        val_folds = [val_folds]
+    folds = set(folds)
 
-	elif folds_train is None:
-		folds_train = list(folds.difference(folds_val))
+    if train_folds is None and val_folds is None:
+        val_folds = [len(folds)]
+        train_folds = folds.difference(val_folds)
 
-	elif folds_val is None:
-		folds_val = list(folds.difference(folds_train))
+    elif train_folds is None:
+        assert isinstance(val_folds, Iterable)
+        train_folds = folds.difference(val_folds)
 
-	return folds_train, folds_val
+    elif val_folds is None:
+        assert isinstance(train_folds, Iterable)
+        val_folds = folds.difference(train_folds)
+
+    train_folds = list(train_folds)
+    val_folds = list(val_folds)
+
+    if verbose >= 2:
+        logger.debug(f"Found folds {train_folds=} and {val_folds=}.")
+
+    return train_folds, val_folds

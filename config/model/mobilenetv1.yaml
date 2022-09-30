@@ -1,6 +1,0 @@
-# @package _group_
-
-name: "MobileNetV1"
-acronym: "MNV1"
-
-n_classes: ${data.n_classes}

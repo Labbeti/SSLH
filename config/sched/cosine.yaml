@@ -1,6 +1,0 @@
-# @package _group_
-
-# math.cos(7.0 / 16.0 * math.pi * min(step / n_steps, 1.0))
-name: "CosineScheduler"
-acronym: "cosine"
-on_epoch: ${data.log_on_epoch}

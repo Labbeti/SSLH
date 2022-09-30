@@ -1,0 +1,31 @@
+# @package data
+
+name: "cifar10"
+
+n_classes: 10
+root: ${path.cifar10}
+monitor: "val/acc"
+monitor_mode: "max"
+val_check_interval: 1.0
+log_on_epoch: true
+
+download: false
+
+spectro:
+  mean: [0.4914009, 0.48215896, 0.4465308]
+  std: [0.24703279, 0.24348423, 0.26158753]
+
+dm:
+  _target_: "sslh.datamodules.semi_supervised.CIFAR10SSLDataModule"
+  root: "${path.cifar10}"
+  bsize_s: 30
+  bsize_u: 30
+  n_workers_s: 2
+  n_workers_u: 3
+  drop_last: true
+  pin_memory: false
+  ratio_s: 0.1
+  ratio_u: 0.9
+  duplicate_loader_s: false
+
+  download: false

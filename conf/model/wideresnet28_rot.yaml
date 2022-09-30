@@ -1,0 +1,8 @@
+# @package model
+
+_target_: "sslh.models.wideresnet28_rot.WideResNet28Rot"
+
+n_classes: ${data.n_classes}
+n_input_channels: 1
+width: 2
+rot_size: 4

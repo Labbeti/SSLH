@@ -1,0 +1,12 @@
+# @package pl
+
+_target_: "sslh.pl_modules.fixmatch.fixmatch_threshold_guess_mixup.FixMatchThresholdGuessMixUp"
+
+activation: "softmax"
+criterion_s: "CrossEntropy"
+criterion_u: "CrossEntropy"
+reduction: "none"
+lambda_u: 1.0
+threshold: 0.75
+threshold_guess: 0.75
+alpha: 0.75
