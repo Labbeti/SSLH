@@ -126,7 +126,7 @@ sslh
 │     ├── supervised
 │     └── semi_supervised
 ├── datasets
-├── pl
+├── pl_modules
 │     ├── deep_co_training
 │     ├── fixmatch
 │     ├── mean_teacher
@@ -232,3 +232,6 @@ If you use this code, you can cite the following paper associated :
 	pages = {23},
 }
 ```
+
+## Contact
+- Etienne Labbé "Labbeti" (maintainer) : labbeti.pub@gmail.com
