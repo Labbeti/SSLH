@@ -1,0 +1,18 @@
+# @package pl
+
+defaults:
+  - /activation: softmax
+  - /criterion@criterion_s: ce_vec
+  - /criterion@criterion_u: ce_vec
+  - /criterion@criterion_u1: ce_vec
+
+_target_: "sslh.pl_modules.remixmatch.remixmatch_norot.ReMixMatchNoRot"
+
+log_on_epoch: ${data.log_on_epoch}
+history: 128
+lambda_u: 1.5
+lambda_u1: 0.5
+n_augms: 2
+temperature: 0.5
+
+alpha: 0.75

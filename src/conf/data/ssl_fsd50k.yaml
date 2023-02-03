@@ -1,0 +1,31 @@
+# @package data
+
+log_on_epoch: false
+monitor: "val/f1"
+monitor_mode: "max"
+n_classes: 200
+val_check_interval: 1000
+
+sample_rate: 44100
+
+spectro:
+  n_mels: 64
+  n_time: 500
+  n_fft: 2048
+
+dm:
+  _target_: "sslh.datamodules.semi_supervised.fsd50k.FSD50KSSLDataModule"
+  root: "${path.fsd50k}"
+  bsize_s: 128
+  bsize_u: 128
+  n_workers: 5
+  drop_last: true
+  pin_memory: false
+  ratio_s: 0.1
+  ratio_u: 0.9
+  duplicate_loader_s: false
+  verbose: ${verbose}
+
+  download: false
+  n_train_steps: 25000
+  sampler_s_balanced: true

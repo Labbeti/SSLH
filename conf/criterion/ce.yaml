@@ -1,3 +1,0 @@
-# @package criterion
-
-_target_: "torch.nn.modules.loss.CrossEntropyLoss"

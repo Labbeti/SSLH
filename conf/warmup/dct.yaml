@@ -1,9 +1,0 @@
-# @package warmup
-
-_target_: "sslh.callbacks.warmup.WarmUpCallback"
-
-target_value: ${pl.lambda_diff}
-warmup_len: ${epoch}
-warmup_rule: "constant"
-on_epoch: true
-target_attr: "lambda_diff"

@@ -1,0 +1,33 @@
+# @package _global_
+
+defaults:
+  - /path: osi
+  - _self_
+
+
+slurm:
+  # --- Config
+  account: null
+  constraint: null
+  cpus_per_task: 5
+  distribution: null
+  error: "${path.log_root}/slurm/%j-${slurm.job_name}.out"
+  gres: "gpu:${slurm.gpus}"
+  gres_flags: "enforce-binding"
+  hint: null
+  job_name: "${datetime}-${tag}"
+  mem: null
+  mem_per_cpu: "9000M"
+  nodes: 1
+  ntasks_per_node: ${slurm.gpus}
+  output: "${path.log_root}/slurm/%j-${slurm.job_name}.out"
+  partition: "GPUNodes"
+  qos: null
+  time: 0
+
+  # --- Other
+  gpus: 1
+  module_cmds: "module purge; module load singularity/3.0.3"
+  sbatch: "sbatch"
+  srun: "srun singularity exec /logiciels/containerCollections/CUDA11/pytorch-NGC-21-03-py3.sif"
+  test_only: false

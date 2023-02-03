@@ -1,8 +1,0 @@
-# @package pl
-
-_target_: "sslh.pl_modules.mixup.mixup.MixUp"
-
-activation: "softmax"
-criterion: "CrossEntropy"
-reduction: "mean"
-alpha: 0.4

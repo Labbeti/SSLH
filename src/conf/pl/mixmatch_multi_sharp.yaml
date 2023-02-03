@@ -1,0 +1,15 @@
+# @package pl
+
+defaults:
+  - /activation: softmax
+  - /criterion@criterion_s: ce_vec
+  - /criterion@criterion_u: ce_vec
+
+_target_: "sslh.pl_modules.mixmatch.mixmatch_multi_sharp.MixMatchMultiSharp"
+
+log_on_epoch: ${data.log_on_epoch}
+lambda_u: 1.0
+n_augms: 2
+
+alpha: 0.75
+sharpen_threshold: 0.75

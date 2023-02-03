@@ -1,0 +1,19 @@
+# @package pl
+
+defaults:
+  - /criterion@criterion_s: ce_vec
+  - /criterion@criterion_u: ce_vec
+  - /activation@activation: softmax
+  - _self_
+
+_target_: "sslh.pl_modules.pseudo_labeling.pseudo_labeling.PseudoLabeling"
+
+log_on_epoch: ${data.log_on_epoch}
+lambda_u: 1.0
+threshold: 0.0
+
+criterion_s:
+  reduction: "none"
+
+criterion_u:
+  reduction: "none"

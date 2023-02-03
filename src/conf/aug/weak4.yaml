@@ -1,0 +1,20 @@
+# @package aug
+
+- type: "spectrogram"
+  aug:
+    _target_: "sslh.transforms.spectrogram.spec_aug.SpecAugmentation"
+    freq_drop_width: 8
+    freq_stripes_num: 2
+    time_drop_width: 8
+    time_stripes_num: 1
+    time_dim: 3
+    freq_dim: 2
+    inplace: true
+    p: 0.5
+
+- type: "waveform"
+  aug:
+    _target_: "sslh.transforms.waveform.speed_perturbation.SpeedPerturbation"
+    rates: [0.5, 1.5]
+    align: "random"
+    p: 0.5

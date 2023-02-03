@@ -1,0 +1,17 @@
+# @package _global_
+
+defaults:
+  - common
+  - aug@aug_s: ident
+  - aug@aug_u: ident
+  - aug@val_aug: ident
+  - data: ssl_esc10
+  - model: wideresnet28
+  - optim: adam
+  - pl: pseudo_labeling
+  - sched: softcosine
+  - trainer: default
+  - warmup: pl
+  - override hydra/job_logging: custom
+  - override hydra/hydra_logging: colorlog
+  - _self_

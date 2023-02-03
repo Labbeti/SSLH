@@ -1,9 +1,0 @@
-# @package warmup
-
-_target_: "sslh.callbacks.warmup.WarmUpCallback"
-
-target_value: ${pl.lambda_u}
-warmup_len: ${epochs}
-warmup_rule: "constant"
-on_epoch: true
-target_attr: "lambda_u"

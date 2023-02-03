@@ -1,0 +1,14 @@
+# @package pl
+
+defaults:
+  - /activation: softmax
+  - /log_activation: log_softmax
+  - /criterion@criterion_s: ce_vec
+
+_target_: "sslh.pl_modules.deep_co_training.deep_co_training.DeepCoTraining"
+
+log_on_epoch: ${data.log_on_epoch}
+epsilon: 0.02
+lambda_cot: 1.0
+lambda_diff: 0.5
+duplicate_loader_s: true

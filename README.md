@@ -32,9 +32,10 @@ With 3 models :
 
 **IMPORTANT NOTE: The implementation of Mean Teacher (MT), Deep Co-Training (DCT) and Pseudo-Labeling (PL) are present in this repository but not fully tested.**
 
-You can find a more stable version of MT and DCT at https://github.com/lcances/semi-supervised.
+You can find a more stable version of MT and DCT at https://github.com/Labbeti/semi-supervised.
 The datasets AudioSet and FSD50K are in beta testing.
-If you meet problems, you can contact me at 
+
+If you meet problems to run experiments, you can contact me at `labbeti.pub@gmail.com`.
 
 
 ## Installation
@@ -234,4 +235,5 @@ If you use this code, you can cite the following paper associated :
 ```
 
 ## Contact
-- Etienne Labbé "Labbeti" (maintainer) : labbeti.pub@gmail.com
+Maintainer:
+- Etienne Labbé "Labbeti": labbeti.pub@gmail.com

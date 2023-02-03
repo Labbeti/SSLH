@@ -1,0 +1,29 @@
+# @package data
+
+log_on_epoch: false
+monitor: "val/acc"
+monitor_mode: "max"
+n_classes: 5
+val_check_interval: 1000
+
+sample_rate: 16000
+
+spectro:
+  n_mels: 64
+  hop_length: 512
+  n_fft: 2048
+
+dm:
+  _target_: "sslh.datamodules.semi_supervised.pvc.PVCSSLDataModule"
+  root: "${path.pvc}"
+  bsize_s: 128
+  bsize_u: 128
+  n_workers: 5
+  drop_last: true
+  pin_memory: false
+  ratio_s: 0.1
+  ratio_u: 0.9
+  duplicate_loader_s: false
+  verbose: ${verbose}
+
+  n_train_steps: 50000

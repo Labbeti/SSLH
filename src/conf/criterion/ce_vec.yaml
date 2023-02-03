@@ -1,0 +1,5 @@
+# @package criterion
+
+_target_: "sslh.nn.loss.CrossEntropyLossVecTargets"
+
+reduction: "mean"

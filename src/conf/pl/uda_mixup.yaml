@@ -1,0 +1,20 @@
+# @package pl
+
+defaults:
+  - /activation: softmax
+  - /criterion@criterion_s: ce_vec
+  - /criterion@criterion_u: ce_vec
+
+criterion_s:
+  reduction: "none"
+
+criterion_u:
+  reduction: "none"
+
+_target_: "sslh.pl_modules.uda.uda_mixup.UDAMixup"
+
+log_on_epoch: ${data.log_on_epoch}
+lambda_u: 1.0
+threshold: 0.8
+temperature: 0.5
+alpha: 0.75

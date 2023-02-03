@@ -1,0 +1,15 @@
+# @package trainer
+
+_target_: "pytorch_lightning.trainer.Trainer"
+
+accelerator: null
+deterministic: true
+fast_dev_run: false
+gpus: ${slurm.gpus}
+max_epochs: ${epochs}
+max_steps: null
+move_metrics_to_cpu: false
+multiple_trainloader_mode: "max_size_cycle"
+resume_from_checkpoint: ${resume_path}
+terminate_on_nan: true
+val_check_interval: ${data.val_check_interval}

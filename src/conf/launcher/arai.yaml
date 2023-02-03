@@ -1,0 +1,33 @@
+# @package _global_
+
+defaults:
+  - /path: arai
+  - _self_
+
+
+slurm:
+  # --- Config
+  account: null
+  constraint: null
+  cpus_per_task: 10
+  distribution: null
+  error: "${path.log_root}/slurm/%j-${slurm.job_name}.out"
+  gres: null
+  gres_flags: null
+  hint: null
+  job_name: "${datetime}-${tag}"
+  mem: null
+  mem_per_cpu: null
+  nodes: 1
+  ntasks_per_node: null
+  output: "${path.log_root}/slurm/%j-${slurm.job_name}.out"
+  partition: null
+  qos: null
+  time: 0
+
+  # --- Other
+  gpus: 1
+  module_cmds: "true"
+  sbatch: "bash"
+  srun: "true &&"
+  test_sbatch: false

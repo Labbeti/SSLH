@@ -1,0 +1,9 @@
+# @package aug
+
+- type: "waveform"
+  aug:
+    _target_: "sslh.transforms.other.noise.AddGaussianSNRModule"
+
+    min_snr_in_db: 15.0
+    max_snr_in_db: 15.0
+    p: 1.0

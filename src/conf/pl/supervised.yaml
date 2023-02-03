@@ -1,0 +1,9 @@
+# @package pl
+
+defaults:
+  - /activation: softmax
+  - /criterion@criterion: ce_vec
+
+_target_: "sslh.pl_modules.supervised.supervised.Supervised"
+
+log_on_epoch: ${data.log_on_epoch}

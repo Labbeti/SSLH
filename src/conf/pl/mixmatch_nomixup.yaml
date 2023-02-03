@@ -1,0 +1,14 @@
+# @package pl
+
+defaults:
+  - /activation: softmax
+  - /criterion@criterion_s: ce_vec
+  - /criterion@criterion_u: ce_vec
+
+_target_: "sslh.pl_modules.mixmatch.mixmatch_nomixup.MixMatchNoMixup"
+
+log_on_epoch: ${data.log_on_epoch}
+lambda_u: 1.0
+n_augms: 2
+
+temperature: 0.5

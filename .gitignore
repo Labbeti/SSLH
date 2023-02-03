@@ -16,6 +16,7 @@ outputs/
 boards/
 logs/
 img/
+calmip_logs/
 
 # Folders mask
 *.egg-info/
@@ -28,7 +29,12 @@ img/
 *.ign*
 *_ign*
 .tmp*
+ign_*
 
-# Specific files
+# Specific files/folders
 .sbatch.sh
 cfg.sh
+notebooks/nb_data
+notebooks/geckodriver.log
+corpus
+scripts/cache/

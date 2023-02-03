@@ -1,0 +1,15 @@
+# @package _global_
+
+defaults:
+  - osi
+  - _self_
+
+
+slurm:
+  # --- Config
+  # --- Other
+  gpus: 1
+  module_cmds: "true"
+  sbatch: "bash"
+  srun: "true &&"
+  test_sbatch: false

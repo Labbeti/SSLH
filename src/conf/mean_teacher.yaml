@@ -1,0 +1,24 @@
+# @package _global_
+
+defaults:
+  - common
+  - aug@train_aug_stu_s: weak
+  - aug@train_aug_stu_u: weak
+  - aug@train_aug_tea_s: ident
+  - aug@train_aug_tea_u: ident
+  - aug@val_aug: ident
+  - data: ssl_esc10
+  - model: wideresnet28
+  - optim: adam
+  - pl: mean_teacher
+  - sched: softcosine
+  - trainer: default
+  - warmup: mt
+  - override hydra/job_logging: custom
+  - override hydra/hydra_logging: colorlog
+  - _self_
+
+ckpt:
+  monitor: "val/acc_tea"
+
+tea_has_same_weights: false

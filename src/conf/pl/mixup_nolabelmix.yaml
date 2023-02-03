@@ -1,0 +1,10 @@
+# @package pl
+
+defaults:
+  - /activation: softmax
+  - /criterion@criterion: ce_vec
+
+_target_: "sslh.pl_modules.mixup.mixup_nolabelmix.MixupNoLabelMix"
+
+log_on_epoch: ${data.log_on_epoch}
+alpha: 0.4
