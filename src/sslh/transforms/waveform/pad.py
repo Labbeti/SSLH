@@ -18,7 +18,7 @@ class Pad(WaveformTransform):
         dim: int = -1,
         mode: str = "constant",
         p: float = 1.0,
-    ):
+    ) -> None:
         """
         Example :
 

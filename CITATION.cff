@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: SSLH
+authors:
+  - given-names: Etienne
+    family-names: Labbé
+    affiliation: IRIT
+    orcid: 'https://orcid.org/0000-0002-7219-5463'
+url: https://github.com/Labbeti/SSLH
+
+preferred-citation:
+  authors:
+    - family-names: Cances
+      given-names: Léo
+    - family-names: Labbé
+      given-names: Etienne
+      affiliation: IRIT
+      orcid: 'https://orcid.org/0000-0002-7219-5463'
+    - family-names: Pellegrini
+      given-names: Thomas
+      affiliation: IRIT
+      orcid: 'https://orcid.org/0000-0001-8984-1399'
+  doi: "10.1186/s13636-022-00255-6"
+  end: 23
+  issue: 1
+  journal: "EURASIP Journal on Audio, Speech, and Music Processing"
+  start: 1
+  month: 9
+  title: "Comparison of semi-supervised deep learning algorithms for audio classification"
+  type: newspaper-article
+  url: "https://doi.org/10.1186/s13636-022-00255-6"
+  volume: 2022
+  year: 2022
