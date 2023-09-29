@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - launcher: "???"
+  - launcher: local
 
 datetime: "${now:%Y-%m-%d_%H-%M-%S}"
 debug: false

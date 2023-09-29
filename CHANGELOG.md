@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.2] 2023-09-29
+### Fixed
+- Local launcher file.
+
 ## [3.1.1] 2023-03-23
 ### Added
 - CITATION file.
