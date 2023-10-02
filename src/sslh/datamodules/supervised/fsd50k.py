@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from typing import Callable, Optional
+from typing import Any, Callable, Dict, Optional
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data.dataloader import DataLoader
@@ -30,7 +30,7 @@ class FSD50KSupDataModule(LightningDataModule):
         download: bool = False,
         n_train_steps: Optional[int] = 1000,
         sampler_s_balanced: bool = True,
-    ):
+    ) -> None:
         """
         LightningDataModule of FSD50K (FSD50K) for partial supervised trainings.
 
@@ -78,7 +78,7 @@ class FSD50KSupDataModule(LightningDataModule):
             _ = FSD50K(root=self.root, subset=FSD50KSubset.DEV, download=True)
 
     def setup(self, stage: Optional[str] = None):
-        dataset_params = dict(
+        dataset_params: Dict[str, Any] = dict(
             root=self.root,
             download=False,
         )
@@ -123,6 +123,10 @@ class FSD50KSupDataModule(LightningDataModule):
 
     def train_dataloader(self) -> DataLoader:
         train_dataset = self.train_dataset_raw
+        if train_dataset is None:
+            raise RuntimeError(
+                "Cannot call train_dataloader() if the datamodule is not setup."
+            )
         train_dataset = TransformDataset(train_dataset, self.train_transform, index=0)
         train_dataset = TransformDataset(train_dataset, self.target_transform, index=1)
 

@@ -9,8 +9,6 @@ monitor_mode: "max"
 val_check_interval: 1.0
 log_on_epoch: true
 
-download: false
-
 spectro:
   mean: [0.4914009, 0.48215896, 0.4465308]
   std: [0.24703279, 0.24348423, 0.26158753]

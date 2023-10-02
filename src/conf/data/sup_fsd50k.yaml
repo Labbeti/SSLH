@@ -10,11 +10,21 @@ val_check_interval: 1000
 log_on_epoch: false
 sample_rate: 44100
 
-download: false
-n_train_steps: 25000
-sampler_s_balanced: true
-
 spectro:
   n_mels: 64
   n_time: 500
   n_fft: 2048
+
+
+dm:
+  _target_: "sslh.datamodules.supervised.fsd50k.FSD50KSupDataModule"
+  root: "${path.fsd50k}"
+  bsize: 60
+  n_workers: 4
+  drop_last: false
+  pin_memory: False
+  ratio: 1.0
+
+  download: false
+  n_train_steps: 25000
+  sampler_s_balanced: true

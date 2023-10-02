@@ -190,16 +190,24 @@ class FSD50K(Dataset):
 
     def _is_prepared(self) -> bool:
         root_dir = self.get_root_dir()
-        return all(
-            [
+
+        dirs_exists = all(
+            (
                 osp.isdir(osp.join(root_dir, "FSD50K.dev_audio")),
                 osp.isdir(osp.join(root_dir, "FSD50K.eval_audio")),
                 osp.isdir(osp.join(root_dir, "FSD50K.ground_truth")),
+            )
+        )
+        if not dirs_exists:
+            return False
+
+        return all(
+            (
                 len(os.listdir(osp.join(root_dir, "FSD50K.dev_audio")))
                 == SUBSET_INFO["dev"]["n_samples"],
                 len(os.listdir(osp.join(root_dir, "FSD50K.eval_audio")))
                 == SUBSET_INFO["eval"]["n_samples"],
-            ]
+            )
         )
 
     def _load_data(self):

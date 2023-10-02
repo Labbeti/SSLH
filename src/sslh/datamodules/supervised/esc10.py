@@ -122,20 +122,16 @@ class ESC10SupDataModule(LightningDataModule):
             self.test_dataset_raw = None
 
     def train_dataloader(self) -> DataLoader:
-        train_dataset_raw = self.train_dataset_raw
-        if train_dataset_raw is None:
+        train_dataset = self.train_dataset_raw
+        if train_dataset is None:
             raise RuntimeError(
                 "Cannot call train_dataloader() if the datamodule is not setup."
             )
-        train_dataset_raw = TransformDataset(
-            train_dataset_raw, self.train_transform, index=0
-        )
-        train_dataset_raw = TransformDataset(
-            train_dataset_raw, self.target_transform, index=1
-        )
+        train_dataset = TransformDataset(train_dataset, self.train_transform, index=0)
+        train_dataset = TransformDataset(train_dataset, self.target_transform, index=1)
 
         loader = DataLoader(
-            dataset=train_dataset_raw,
+            dataset=train_dataset,
             batch_size=self.bsize_train,
             num_workers=self.n_workers,
             drop_last=self.drop_last,

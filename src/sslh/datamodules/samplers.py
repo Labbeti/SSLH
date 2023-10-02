@@ -4,8 +4,9 @@
 import itertools
 import random
 
-from typing import Iterable, Iterator, List, Optional, Sequence, Sized
+from typing import Iterable, Iterator, List, Optional, Sequence, Sized, Union
 
+from torch import Tensor
 from torch.utils.data.sampler import Sampler
 
 
@@ -28,7 +29,7 @@ class SubsetSampler(Sampler):
 class SubsetCycleSampler(Sampler):
     def __init__(
         self,
-        indexes: Iterable[int],
+        indexes: Union[Iterable[int], Tensor],
         n_max_iterations: Optional[int] = None,
         shuffle: bool = True,
     ) -> None:
@@ -42,8 +43,13 @@ class SubsetCycleSampler(Sampler):
         :param shuffle: If True, shuffle the indexes at every len(indexes).
                 (default: True)
         """
+        if isinstance(indexes, Tensor):
+            indexes = indexes.tolist()
+        else:
+            indexes = list(indexes)
+
         super().__init__(None)
-        self.indexes = list(indexes)
+        self.indexes = indexes
         self.n_max_iterations = (
             n_max_iterations if n_max_iterations is not None else len(indexes)
         )

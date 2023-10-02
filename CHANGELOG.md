@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.3] 2023-10-02
+### Added
+- Usage of sslh package when using `python -m sslh`
+
+### Fixed
+- FSD50K download check.
+
 ## [3.1.2] 2023-09-29
 ### Fixed
 - Local launcher file.
