@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.4] 2024-12-14
+### Added
+- LICENSE and install workflow files.
+
 ## [3.1.3] 2023-10-02
 ### Added
 - Usage of sslh package when using `python -m sslh`
